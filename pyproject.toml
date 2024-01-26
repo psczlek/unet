@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools >= 69.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unet"
+version = "0.0.a1"
+description = "Unified Network Toolkit"
+license="BSD 3-Clause License"
+dynamic = ["version"]
+authors = [
+    {name = "Cyprian Czaja", email = "cyprian_cc@protonmail.com"},
+]
+maintainers = [
+    {name = "Cyprian Czaja", email = "cyprian_cc@protonmail.com"},
+]
+dependencies = [
+    "scapy",
+]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.urls]
+Repository = "https://github.com/psczlek/unet.git"
+Changelog = "https://github.com/psczlek/unet/blob/master/CHANGELOG"
