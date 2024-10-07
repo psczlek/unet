@@ -10,7 +10,6 @@ import queue
 import shutil
 import signal
 import socket
-import sys
 import textwrap
 import threading
 import time
@@ -47,7 +46,6 @@ except ModuleNotFoundError:
     _error(error_message)
 
 __all__ = [
-    "BYTEORDER",
     "ARPHRD_NETROM",
     "ARPHRD_ETHER",
     "ARPHRD_EETHER",
@@ -143,9 +141,6 @@ __all__ = [
     "Dissect",
     "main",
 ]
-
-
-BYTEORDER = sys.byteorder
 
 
 ARPHRD_NETROM: Final = 0
