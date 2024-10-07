@@ -28,6 +28,11 @@ def disable_colors() -> None:
 def supports_colors() -> bool:
     """
     Check if ANSI colors are supported.
+
+    Returns
+    -------
+    bool
+        True if ansi colors are supported. False otherwise.
     """
     if not _on:
         return False
@@ -41,6 +46,11 @@ def supports_colors() -> bool:
 def supports_true_color() -> bool:
     """
     Check if true colors are supported.
+
+    Returns
+    -------
+    bool
+        True if true colors are supported. False otherwise.
     """
     if not _on:
         return False
@@ -188,11 +198,18 @@ class Color:
         """
         Color a message.
 
-        :param msg:
+        Parameters
+        ----------
+        msg : str
             String to be colored.
 
-        :param color:
-            Color name, tuple with RGB values or hex color code.
+        color : RGB | Hex | str | None
+            Color name, tuple with RGB values or hex color code. (default None)
+
+        Returns
+        -------
+        str
+            Colorified `msg`.
         """
         if color is None:
             return msg
@@ -208,11 +225,18 @@ class Color:
         """
         Color a message using ANSI color.
 
-        :param msg:
+        Parameters
+        ----------
+        msg : str
             String to be colored.
 
-        :param color_or_colors:
+        color_or_colors : str
             Color name or names.
+
+        Returns
+        -------
+        str
+            Colorified `msg`.
         """
         if not supports_colors() or not len(color_or_colors):
             return msg
@@ -231,11 +255,21 @@ class Color:
         """
         Color a message using RGB values.
 
-        :param msg:
+        Parameters
+        ----------
+        msg : str
             String to be colored.
 
-        :param color:
+        color : RGB
             Tuple containing RGB values.
+
+        background : RGB | None
+            Background color to apply. (default None)
+
+        Returns
+        -------
+        str
+            Colorified `msg`.
         """
         if not supports_true_color():
             return msg
@@ -254,11 +288,21 @@ class Color:
         """
         Color a message using hex codes.
 
-        :param msg:
+        Parameters
+        ----------
+        msg : str
             String to be colored.
 
-        :param color:
+        color : Hex
             Hex color code.
+
+        background : Hex | None
+            Background color to apply. (default None)
+
+        Returns
+        -------
+        str
+            Colorified `msg`.
         """
         value = color.value
 

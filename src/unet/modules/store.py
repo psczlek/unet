@@ -40,8 +40,14 @@ class Store:
         """
         Fetch a module.
 
-        :param which:
+        Parameters
+        ----------
+        which : str
             A valid git url for the module to be fetched.
+        
+        Returns
+        -------
+        None
         """
         try:
             # extract the repository name from the URL
@@ -65,8 +71,14 @@ class Store:
         """
         Remove a module.
 
-        :param which:
+        Parameters
+        ----------
+        which : str
             Name of a module to be removed.
+
+        Returns
+        -------
+        None
         """
         try:
             with open(self._module_list_file, "r+") as file:
@@ -79,7 +91,7 @@ class Store:
                         print(f"repository '{repo_name}' removed from {repo_path}")
                     else:
                         print(f"repository '{repo_name}' does not exist locally")
-                    # remove from the JSON file
+                    # Remove from the JSON file
                     del data[repo_name]
                     file.seek(0)
                     file.truncate()
@@ -94,8 +106,14 @@ class Store:
         """
         Update a module.
 
-        :param which:
+        Parameters
+        ----------
+        which : str
             Name of a module to be updated.
+
+        Returns
+        -------
+        None
         """
         try:
             with open(self._module_list_file, "r") as file:
@@ -119,6 +137,10 @@ class Store:
     def peek_for_updates(self) -> None:
         """
         Check if locally installed modules are updatable.
+
+        Returns
+        -------
+        None
         """
         try:
             updates = {}
@@ -143,6 +165,10 @@ class Store:
     def list(self) -> None:
         """
         Show locally installed modules.
+
+        Returns
+        -------
+        None
         """
         max_x = shutil.get_terminal_size().columns
         border_top = Color.gray(Assets.HORIZONTAL_LINE * 2

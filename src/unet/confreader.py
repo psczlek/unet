@@ -29,6 +29,11 @@ class ConfReader:
     def read(self) -> dict[str, Any]:
         """
         Read the contents of the config file.
+
+        Returns
+        -------
+        dict[str, Any]
+            The contents of the config file.
         """
         with self._file.open("r") as f:
             self._data = json.load(f)
@@ -37,6 +42,10 @@ class ConfReader:
     def print(self) -> None:
         """
         Print the contents of the config file.
+
+        Returns
+        -------
+        None
         """
 
         def json_print(data: dict[str, Any], indent: int = 0) -> None:

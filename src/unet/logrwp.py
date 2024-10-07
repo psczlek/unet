@@ -27,14 +27,21 @@ class LogRWP:
         """
         Read the contents of a log file into the supplied buffer.
 
-        :param name:
+        Parameters
+        ----------
+        name : str
             File from which to read the contents.
 
-        :param buf:
+        buf : bytearray
             Buffer into which the contents will be read.
 
-        :param size:
+        size : int
             Number of bytes to read.
+
+        Returns
+        -------
+        int
+            The number of bytes read.
         """
         if self._mode != "read":
             return 0
@@ -68,11 +75,18 @@ class LogRWP:
         """
         Write a message to a log file.
 
-        :param name:
+        Parameters
+        ----------
+        name : str
             File to which write a message.
 
-        :param msg:
+        msg : str
             Message to write.
+
+        Returns
+        -------
+        int
+            The number of bytes written.
         """
         if self._mode != "write":
             return 0
@@ -92,8 +106,14 @@ class LogRWP:
         """
         Print the contents of a log file.
 
-        :param name:
+        Parameters
+        ----------
+        name : str
             Name of a log file to print.
+
+        Returns
+        -------
+        None
         """
         if self._mode != "read":
             return
@@ -123,6 +143,10 @@ class LogRWP:
     def print_all(self) -> None:
         """
         Print the contents of all log files.
+
+        Returns
+        -------
+        None
         """
         if self._mode != "read":
             return

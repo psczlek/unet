@@ -23,29 +23,46 @@ sys.dont_write_bytecode = True
 
 def lookup_symbol(module: ModuleType, symbol_name: str) -> bool:
     """
-    Check if a symbol exists within a module.
+    Check if a symbol in a module matches the expected signature.
 
-    :param module:
-        Module in which to look for the symbol.
+    Parameters
+    ----------
+    module : ModuleType
+        Module to look up the symbol in.
+    symbol_name : str
+        Name of the symbol to check.
+    signature : str
+        Expected signature of the symbol.
 
-    :param symbol_name:
-        Symbol name to look for.
+    Returns
+    -------
+    bool
+        True if the symbol exists and its signature matches, False otherwise.
     """
     return hasattr(module, symbol_name)
 
 
-def lookup_signature(module: ModuleType, symbol_name: str, signature: str) -> bool:
+def lookup_signature(
+        module: ModuleType,
+        symbol_name: str,
+        signature: str,
+) -> bool:
     """
-    Check if a symbol's signature is compliant with the provided one.
+    Check if a symbol in a module matches the expected signature.
 
-    :param module:
-        pass
+    Parameters
+    ----------
+    module : ModuleType
+        Module to look up the symbol in.
+    symbol_name : str
+        Name of the symbol to check.
+    signature : str
+        Expected signature of the symbol.
 
-    :param symbol_name:
-        pass
-
-    :param signature:
-        pass
+    Returns
+    -------
+    bool
+        True if the symbol exists and its signature matches, False otherwise.
     """
     if lookup_symbol(module, symbol_name):
         symbol = getattr(module, symbol_name)
@@ -56,13 +73,19 @@ def lookup_signature(module: ModuleType, symbol_name: str, signature: str) -> bo
 
 def get_signature(module: ModuleType, symbol_name: str) -> str | None:
     """
-    Retrieve the signature of a symbol.
+    Retrieve the signature of a symbol from a module.
 
-    :param module:
-        pass
+    Parameters
+    ----------
+    module : ModuleType
+        Module to look up the symbol in.
+    symbol_name : str
+        Name of the symbol to retrieve the signature for.
 
-    :param symbol_name:
-        pass
+    Returns
+    -------
+    str | None
+        The signature of the symbol as a string, or None if the symbol doesn't exist.
     """
     if lookup_symbol(module, symbol_name):
         symbol = getattr(module, symbol_name)
@@ -83,11 +106,18 @@ def load_module(source: str, module_name: str) -> ModuleType | None:
     """
     Load a module and return a handle to it using create_module.
 
-    :param source:
+    Parameters
+    ----------
+    source : str
         Path to a Python file.
 
-    :param module_name:
+    module_name : str
         Name to assign the loaded module.
+
+    Returns
+    -------
+    ModuleType | None
+        Handle to the loaded module, or None on failure.
     """
     spec = importlib.util.spec_from_file_location(module_name, source)
     if spec is None or spec.loader is None:
@@ -103,25 +133,6 @@ def load_module(source: str, module_name: str) -> ModuleType | None:
     spec.loader.exec_module(module)
 
     return module
-
-
-# this also checks for the signature that we expect from each entry point
-# (i.e. the main function)
-#
-# for more generic approach use the above function
-def _load_module(source: str, module_name: str) -> ModuleType | None:
-    load = load_module(source, module_name)
-    if load is None:
-        return None
-
-    main_exists = lookup_symbol(load, "main")
-    sig_compliant = lookup_signature(
-        load, "main", "(args: list[str], flag: unet.flag.Flag) -> None")
-
-    if not main_exists or not sig_compliant:
-        return None
-
-    return load
 
 
 class ModuleLoader:
@@ -146,10 +157,18 @@ class ModuleLoader:
             /,
     ) -> None:
         """
-        This function lacks documentation.
+        Loads modules from the specified path(s).
 
-        :param path_or_paths:
-            pass
+        Parameters
+        ----------
+        path_or_paths : str | list[str] | None, optional
+            A path or list of paths to Python files. If not provided, uses the
+            path(s) given during class initialization.
+
+        Raises
+        ------
+        ValueError
+            If no valid source for a module is provided.
         """
         if path_or_paths is not None and self._path_or_paths is not None:
             # Prioritize path(s) supplied to this function

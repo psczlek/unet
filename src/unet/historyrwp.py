@@ -54,11 +54,18 @@ class HistoryRWP:
         """
         Read the contents of the history file into the supplied buffer.
 
-        :param buf:
+        Parameters
+        ----------
+        buf : bytearray
             Buffer into which the contents will be read.
 
-        :param size:
+        size : int
             Number of bytes to read.
+
+        Returns
+        -------
+        int
+            The number of bytes read.
         """
         if self._mode != "rb":
             return 0
@@ -87,8 +94,15 @@ class HistoryRWP:
         """
         Write a message into the history file.
 
-        :param msg:
+        Parameters
+        ----------
+        msg:
             Message to write.
+
+        Returns
+        -------
+        int
+            The number of bytes written.
         """
         if self._mode == "rb":
             return 0
@@ -101,6 +115,10 @@ class HistoryRWP:
     def print(self) -> None:
         """
         Read the history file and print its contents.
+
+        Returns
+        -------
+        None
         """
         if self._mode != "rb":
             return
