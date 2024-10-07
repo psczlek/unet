@@ -1,0 +1,11 @@
+[flake8]
+count = true
+max-line-length = 120
+max-doc-length = 120
+indent-size = 4
+statistics = true
+jobs = 6
+doctests = true
+ignore =
+    F403
+    W503
