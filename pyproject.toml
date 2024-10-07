@@ -4,22 +4,56 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unet"
-version = "0.0.a1"
+version = "1.0.0"
 description = "Unified Network Toolkit"
-license="BSD 3-Clause License"
-dynamic = ["version"]
+license = {text = "BSD-3-Clause"}
 authors = [
+    {name = "Cyprian Czaja"},
     {name = "Cyprian Czaja", email = "cyprian_cc@protonmail.com"},
 ]
 maintainers = [
+    {name = "Cyprian Czaja"},
     {name = "Cyprian Czaja", email = "cyprian_cc@protonmail.com"},
 ]
 dependencies = [
-    "scapy",
+    "scapy>=2.5.0",
+    "GitPython>=3.1.43",
+    "psutil>=6.0.0",
+    "libpcap>=1.11.0b10"
 ]
-readme = "README.md"
-requires-python = ">=3.10"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">= 3.12"
+keywords = ["unet", "network", "networking"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Environment :: Console",
+    "License :: OSI Approved :: BSD 3-Clause License",
+    "Topic :: Security",
+    "Topic :: System :: Networking",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.scripts]
+unet = "unet.__main__:unet_entry"
 
 [project.urls]
+Homepage = "https://github.com/psczlek/unet"
 Repository = "https://github.com/psczlek/unet.git"
 Changelog = "https://github.com/psczlek/unet/blob/master/CHANGELOG"
+
+[tool.setuptools]
+packages = [
+    "unet",
+    "unet.modules",
+    "unet.modules.dissect",
+    "unet.modules.ping",
+]
+package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+"unet" = ["py.typed"]
+"unet.modules.dissect" = ["oui.txt"]
