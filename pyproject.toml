@@ -44,7 +44,6 @@ unet = "unet.__main__:unet_entry"
 [project.urls]
 Homepage = "https://github.com/psczlek/unet"
 Repository = "https://github.com/psczlek/unet.git"
-Changelog = "https://github.com/psczlek/unet/blob/master/CHANGELOG"
 
 [tool.setuptools]
 packages = [
