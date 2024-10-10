@@ -1251,7 +1251,7 @@ def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     ihl_field = f.add_field("ihl", as_bin(ihl, 8, 4, 4), bin_field=True,
                             sep=" = ", alt_value=hlen, alt_unit="bytes",
                             alt_sep=": ")
-    ihl_field.add_note(ihl)
+    ihl_field.add_note(str(ihl))
 
     # Differentiated Services
     ds = ip.tos

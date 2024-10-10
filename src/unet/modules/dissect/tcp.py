@@ -425,7 +425,7 @@ def tcp_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     hlen_field = f.add_field("hlen", as_bin(doff, 16, 0, 4), bin_field=True,
                              sep=" = ", alt_value=hlen, alt_unit="bytes",
                              alt_sep=": ")
-    hlen_field.add_note(doff)
+    hlen_field.add_note(str(doff))
 
     # TCP Segment length
     segment_len = len(buf) - hlen
