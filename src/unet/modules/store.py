@@ -11,7 +11,7 @@ from typing import Final
 from unet.coloring import Color
 from unet.confreader import ConfReader
 from unet.printing import Assets, eprint, wprint
-from unet.flag import FlagParser, OptionFlag, PositionalFlag
+from unet.flag import FlagParser, OptionFlag
 
 try:
     from git import GitCommandError, Repo
@@ -47,7 +47,7 @@ class Store:
         ----------
         which : str
             A valid git url for the module to be fetched.
-        
+
         Returns
         -------
         None
@@ -251,7 +251,7 @@ STORE_FLAGS: Final = {
     ),
 }
 
-    
+
 def main(args: list[str]) -> None:
     parser = FlagParser(
         prog="store",
@@ -264,9 +264,8 @@ def main(args: list[str]) -> None:
     conf_data = cr.read()
     fetched_path = Path(conf_data["modules"]["fetched"]).expanduser().resolve()
     # print(fetched_path)
-    store = Store(fetched_path)
+    store = Store(str(fetched_path))
 
-    
     if flags.fetch:
         store.fetch(flags.fetch)
     if flags.remove:
