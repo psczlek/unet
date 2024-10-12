@@ -6,9 +6,12 @@ Simple package manager for unet.
 import json
 import shutil
 from pathlib import Path
+from typing import Final
 
 from unet.coloring import Color
+from unet.confreader import ConfReader
 from unet.printing import Assets, eprint, wprint
+from unet.flag import FlagParser, OptionFlag, PositionalFlag
 
 try:
     from git import GitCommandError, Repo
@@ -162,7 +165,7 @@ class Store:
         except Exception as e:
             eprint(f"an error occurred: {e}")
 
-    def list(self) -> None:
+    def lists(self) -> None:
         """
         Show locally installed modules.
 
@@ -205,3 +208,72 @@ class Store:
             return
         except Exception as e:
             eprint(f"an error occurred: {e}")
+
+
+STORE_FLAGS: Final = {
+    "fetch": OptionFlag(
+        short="-f",
+        help="fetch module",
+        type=str,
+        required=False,
+        default=None,
+        metavar="<link>"
+    ),
+    "remove": OptionFlag(
+        short="-r",
+        help="remove module",
+        type=str,
+        required=False,
+        default=None,
+        metavar="<rep_name>"
+    ),
+    "update": OptionFlag(
+        short="-u",
+        help="update module",
+        type=str,
+        required=False,
+        default=None,
+        metavar="<rep_name>"
+    ),
+    "list": OptionFlag(
+        short="-l",
+        help="list all modules",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
+    "peek_for_update": OptionFlag(
+        short="-U",
+        help="check if installed modules are updatable",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
+}
+
+    
+def main(args: list[str]) -> None:
+    parser = FlagParser(
+        prog="store",
+        description="simple pakage manager for unet",
+    )
+    parser.add_arguments(STORE_FLAGS)
+    flags = parser.parse_args(args)
+
+    cr = ConfReader("~/.config/unet/config.json")
+    conf_data = cr.read()
+    fetched_path = Path(conf_data["modules"]["fetched"]).expanduser().resolve()
+    # print(fetched_path)
+    store = Store(fetched_path)
+
+    
+    if flags.fetch:
+        store.fetch(flags.fetch)
+    if flags.remove:
+        store.remove(flags.remove)
+    if flags.update:
+        store.update(flags.update)
+    if flags.list:
+        store.lists()
+    if flags.peek_for_update:
+        store.peek_for_updates()
