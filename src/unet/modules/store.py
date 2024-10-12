@@ -255,7 +255,7 @@ STORE_FLAGS: Final = {
 def main(args: list[str]) -> None:
     parser = FlagParser(
         prog="store",
-        description="simple pakage manager for unet",
+        description="simple package manager for unet",
     )
     parser.add_arguments(STORE_FLAGS)
     flags = parser.parse_args(args)
