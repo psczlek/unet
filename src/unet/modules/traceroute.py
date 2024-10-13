@@ -3,21 +3,21 @@ Record the path packets take through the network to reach the destination host
 """
 
 
-import ipaddress
 import secrets
 import signal
 import socket
 import sys
 import time
+from argparse import Namespace
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 from types import FrameType
-from typing import Final, Literal
+from typing import Final
 
 from unet.coloring import RGB, Color, Hex, supports_colors, supports_true_color
 from unet.flag import FlagParser, OptionFlag, PositionalFlag
-from unet.printing import Assets, eprint
+from unet.printing import eprint
 
 
 def error(message: str, code: int = 1) -> None:
@@ -31,8 +31,8 @@ try:
     logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
     from scapy.layers.inet import ICMP, IP, TCP, UDP
-    from scapy.layers.inet6 import ICMPv6EchoReply, ICMPv6EchoRequest, IPv6
-    from scapy.packet import Packet, Raw, raw
+    from scapy.layers.inet6 import ICMPv6EchoRequest, IPv6
+    from scapy.packet import Packet, Raw
     from scapy.sendrecv import sr1
 except ModuleNotFoundError:
     error("scapy is not installed. Install scapy and try again: "
@@ -43,14 +43,15 @@ __all__ = ["main", "TracerouteResultsPerHop", "Traceroute"]
 
 @dataclass
 class TracerouteResultsPerHop:
-    probe_num: int = 0
+    addrver: int
+    proto: str
+    packet: int = 0
+    hop: int = 0
     host: str | None = None
+    hostname: str | None = None
     rtt: float = 0.0
     timeout_hit: bool = False
-    probes_sent: int = 0
-    retry_count: int = 0
-    timeouts_hit: int = 0
-    current_hop: int = 0
+    count: int = 0
 
 
 class Traceroute:
@@ -60,112 +61,307 @@ class Traceroute:
 
     def __init__(
             self,
-            to: str,
-            method: Literal["icmp", "tcp", "udp"] = "icmp",
-            interface: str | None = None,
-            resolve: bool = True,
+            dst: str,
+            method: str = "icmp",
             ip6: bool = False,
     ) -> None:
-        self.to = to
-        self.method = method
-        self.interface = interface
-        self.resolve = resolve
+        self.dst = dst
+        self.method = method if method in {"icmp", "tcp", "udp"} else "icmp"
         self.ip6 = ip6
-        try:
-            if self.resolve:
-                self.to = socket.getaddrinfo(
-                    self.to,
-                    None,
-                    socket.AF_INET6 if self.ip6 else socket.AF_INET,
-                )[0][4][0]
-            else:
-                ipaddress.ip_address(self.to)
-        except (ValueError, socket.herror):
-            pass
-        _supported_methods = {"icmp", "tcp", "udp"}
-        if self.method not in _supported_methods:
-            raise ValueError(f"unknown method: {self.method}. "
-                             f"supported methods: {_supported_methods}")
 
-    def trace(
-        self,
-        first_hop: int = 1,
-        max_hops: int = 64,
-        retry_count: int = 3,
-        delay: float = 0.2,
-        wait_limit: int = 2,
-        df: bool = False,
-        sport: int = 39181,
-        dport: int = 33435,
-        callback: Callable[[TracerouteResultsPerHop], None] | None = None,
-    ) -> None:
-        bpf = self._get_bpf_filter()
-        for hop in range(first_hop, max_hops + 1):
-            tr_results = TracerouteResultsPerHop(hop, retry_count=retry_count,
-                                                 current_hop=hop)
-            done = False
-            for _ in range(retry_count):
-                pkt = self._build_packet(hop, df, sport, dport)
-                sent_time = time.time()
-                res = sr1(pkt, timeout=wait_limit, inter=delay, filter=bpf,
-                          verbose=False, threaded=False)
-                if res:
-                    recv_time = time.time()
-                    if self._check_packet(res):
-                        tr_results.host = res[IP if not self.ip6 else IPv6].src
-                        tr_results.rtt = (recv_time - sent_time) * 1000
-                        if tr_results.host == self.to:
-                            done = True
-                else:
-                    tr_results.timeout_hit = True
-                    tr_results.timeouts_hit += 1
-                if callback:
-                    callback(tr_results)
-                tr_results.probes_sent += 1
-            if done:
-                return
-            dport += 1
-
-    def _get_bpf_filter(self) -> str:
         if not self.ip6:
-            return ("(ip proto 1 and (icmp[0]=0 or icmp[0]=3 or icmp[0]=11)) "
-                    "or (ip proto 6 and (tcp[13] & 0x16 > 0x10))")
+            self._proto_map = {"icmp": 1, "tcp": 6, "udp": 17}
         else:
-            return ("(ip6 proto 58 and (icmp6[0]=1 or icmp6[0]=3 or icmp6[0]=129)) "
-                    "or (ip6 proto 6 and (tcp[13] & 0x16 > 0x10))")
+            self._proto_map = {"tcp": 6, "udp": 17, "icmp": 58}
+        self.dst = socket.getaddrinfo(
+            self.dst,
+            None,
+            socket.AF_INET if not self.ip6 else socket.AF_INET6,
+            proto=self._proto_map[self.method]
+        )[0][4][0]
 
-    def _check_packet(self, pkt: Packet) -> bool:
-        return True
+        self._tr_results: list[TracerouteResultsPerHop] = []
 
     def _build_packet(
             self,
-            ttl: int,
-            df: bool,
-            sport: int,
-            dport: int,
+            id: int,
+            seq: int,
+            ds: int = 0,
+            ttl: int = 1,
+            df: bool = False,
+            src: str | None = None,
+            sport: int = 39181,
+            dport: int = 33435,
+            rand_sport: bool = False,
+            static_dport: bool = False,
+            data: bytes | None = None,
     ) -> Packet:
+        # Build IP
         if not self.ip6:
             ip = IP(
+                tos=ds,
                 id=secrets.randbelow(0xffff),
-                flags="DF" if df else None,
+                flags=0x2 if df else 0x0,
                 ttl=ttl,
-                dst=self.to,
+                src=src,
+                dst=self.dst,
             )
         else:
-            ip = IPv6(hlim=ttl, dst=self.to)
-        if self.method == "icmp":
-            np = ICMP() if not self.ip6 else ICMPv6EchoRequest()
-        elif self.method == "udp":
-            np = UDP(sport=sport, dport=dport)
-        else:
-            np = TCP(
-                sport=sport,
-                dport=dport,
+            ip = IPv6(
+                tc=ds,
+                hlim=ttl,
+                src=src,
+                dst=self.dst,
+            )
+
+        # Build upper layer
+        upl_proto_map = {
+            "icmp": (ICMP(type=8, code=0, id=id, seq=seq) if not self.ip6
+                     else ICMPv6EchoRequest(id=id, seq=seq)),
+            "udp": UDP(
+                sport=sport if not rand_sport else secrets.randbelow(0xffff),
+                dport=dport + (seq if not static_dport else 0),
+            ),
+            "tcp": TCP(
+                sport=sport if not rand_sport else secrets.randbelow(0xffff),
+                dport=dport + (seq if not static_dport else 0),
                 seq=secrets.randbelow(0xffffffff),
-                flags="S",
-            )
-        pkt = ip / np
+                ack=0,
+                flags=0x2,
+                window=secrets.randbelow(0xffff),
+                options=[
+                    ("MSS", secrets.choice(tuple(range(1220, 1520, 20)))),
+                    ("WScale", secrets.choice(tuple(range(2, 9)))),
+                    ("SAckOK", ""),
+                    ("NOP", None),
+                    ("NOP", None),
+                    ("EOL", None),
+                ]
+            ),
+        }
+
+        pkt = ip / upl_proto_map[self.method]
+
+        # Add data
+        if data is None and self.method != "tcp":
+            data = b"\x00" * (40 - len(pkt))
+            pkt = pkt / Raw(data)
+        elif data is not None:
+            pkt = pkt / Raw(data)
+
         return pkt
+
+    def trace_icmp(
+            self,
+            first_hop: int = 1,
+            max_hops: int = 64,
+            count: int = 3,
+            wait_threshold: float = 5.0,
+            ds: int = 0,
+            df: bool = False,
+            src: str | None = None,
+            data: bytes | None = None,
+            callback: Callable[[TracerouteResultsPerHop], None] | None = None,
+    ) -> None:
+        if not self.ip6:
+            fexpr = "ip proto 1 and (icmp[0]=0 or icmp[0]=3 or icmp[0]=11)"
+        else:
+            fexpr = "ip proto 58 and (icmp6[0]=1 or icmp6[0]=3 or icmp6[0]=129)"
+
+        for hop in range(first_hop, (max_hops + 1)):
+            done = False
+
+            for p in range(0, count):
+                res = TracerouteResultsPerHop(
+                    socket.AF_INET if not self.ip6 else socket.AF_INET6, "icmp",
+                    hop, hop, count=count)
+                pkt = self._build_packet(secrets.randbelow(0xffff + p), p, ds,
+                                         hop, df, src, data=data)
+                sent_time = time.time()
+                rec = sr1(pkt, timeout=wait_threshold, verbose=False,
+                          filter=fexpr)
+
+                if rec:
+                    recv_time = time.time()
+                    host = rec[IP if not self.ip6 else IPv6].src
+                    try:
+                        hostname = socket.gethostbyaddr(host)[0]
+                    except socket.herror:
+                        hostname = host
+                    rtt = (recv_time - sent_time) * 1000
+
+                    res.host = host
+                    res.hostname = hostname
+                    res.rtt = rtt
+
+                    if res.host == self.dst:
+                        done = True
+                else:
+                    res.timeout_hit = True
+
+                if callback:
+                    callback(res)
+
+                self._tr_results.append(res)
+
+            if done:
+                break
+
+    def trace_udp(
+            self,
+            first_hop: int = 1,
+            max_hops: int = 64,
+            count: int = 3,
+            wait_threshold: float = 5.0,
+            ds: int = 0,
+            df: bool = False,
+            src: str | None = None,
+            sport: int = 39181,
+            dport: int = 33435,
+            rand_sport: bool = False,
+            static_dport: bool = False,
+            data: bytes | None = None,
+            callback: Callable[[TracerouteResultsPerHop], None] | None = None,
+    ) -> None:
+        if not self.ip6:
+            fexpr = "ip proto 1 and (icmp[0]=3 or icmp[0]=11)"
+        else:
+            fexpr = "ip proto 58 and (icmp6[0]=1 or icmp6[0]=3)"
+
+        for hop in range(first_hop, (max_hops + 1)):
+            done = False
+
+            for p in range(0, count):
+                res = TracerouteResultsPerHop(
+                    socket.AF_INET if not self.ip6 else socket.AF_INET6, "icmp",
+                    hop, hop, count=count)
+                pkt = self._build_packet(secrets.randbelow(0xffff + p), p, ds,
+                                         hop, df, src, sport, dport, rand_sport,
+                                         static_dport, data)
+                sent_time = time.time()
+                rec = sr1(pkt, timeout=wait_threshold, verbose=False,
+                          filter=fexpr)
+
+                if rec:
+                    recv_time = time.time()
+                    host = rec[IP if not self.ip6 else IPv6].src
+                    try:
+                        hostname = socket.gethostbyaddr(host)[0]
+                    except socket.herror:
+                        hostname = host
+                    rtt = (recv_time - sent_time) * 1000
+
+                    res.host = host
+                    res.hostname = hostname
+                    res.rtt = rtt
+
+                    if res.host == self.dst:
+                        done = True
+                else:
+                    res.timeout_hit = True
+
+                if callback:
+                    callback(res)
+
+                self._tr_results.append(res)
+
+            if done:
+                break
+
+    def trace_tcp(
+            self,
+            first_hop: int = 1,
+            max_hops: int = 64,
+            count: int = 3,
+            wait_threshold: float = 5.0,
+            ds: int = 0,
+            df: bool = False,
+            src: str | None = None,
+            sport: int = 39181,
+            dport: int = 33435,
+            rand_sport: bool = False,
+            static_dport: bool = False,
+            data: bytes | None = None,
+            callback: Callable[[TracerouteResultsPerHop], None] | None = None,
+    ) -> None:
+        if not self.ip6:
+            fexpr = ("(ip proto 1 and (icmp[0]=3 or icmp[0]=4 or icmp[0]=5 or "
+                     "icmp[0]=11 or icmp[0]=12)) or (tcp and (tcp[13] & 0x16 > 0x10))")
+        else:
+            fexpr = ("(ip proto 58 and (icmp6[0]=1 or icmp6[0]=2 or icmp6[0]=3 or "
+                     "icmp6[0]=4)) or (tcp and (tcp[13] & 0x16 > 0x10))")
+
+        for hop in range(first_hop, (max_hops + 1)):
+            done = False
+
+            for p in range(0, count):
+                res = TracerouteResultsPerHop(
+                    socket.AF_INET if not self.ip6 else socket.AF_INET6, "icmp",
+                    hop, hop, count=count)
+                pkt = self._build_packet(secrets.randbelow(0xffff + p), p, ds,
+                                         hop, df, src, sport, dport, rand_sport,
+                                         static_dport, data)
+                sent_time = time.time()
+                rec = sr1(pkt, timeout=wait_threshold, verbose=False,
+                          filter=fexpr)
+
+                if rec:
+                    recv_time = time.time()
+                    host = rec[IP if not self.ip6 else IPv6].src
+                    try:
+                        hostname = socket.gethostbyaddr(host)[0]
+                    except socket.herror:
+                        hostname = host
+                    rtt = (recv_time - sent_time) * 1000
+
+                    res.host = host
+                    res.hostname = hostname
+                    res.rtt = rtt
+
+                    if res.host == self.dst:
+                        done = True
+                else:
+                    res.timeout_hit = True
+
+                if callback:
+                    callback(res)
+
+                self._tr_results.append(res)
+
+            if done:
+                break
+
+    def trace(
+            self,
+            first_hop: int = 1,
+            max_hops: int = 64,
+            count: int = 3,
+            wait_threshold: float = 5.0,
+            ds: int = 0,
+            df: bool = False,
+            src: str | None = None,
+            sport: int = 39181,
+            dport: int = 33435,
+            rand_sport: bool = False,
+            static_dport: bool = False,
+            data: bytes | None = None,
+            callback: Callable[[TracerouteResultsPerHop], None] | None = None,
+    ) -> None:
+        if self.method == "icmp":
+            self.trace_icmp(first_hop, max_hops, count, wait_threshold, ds, df,
+                            src, data, callback)
+        elif self.method == "udp":
+            self.trace_udp(first_hop, max_hops, count, wait_threshold, ds, df,
+                           src, sport, dport, rand_sport, static_dport, data,
+                           callback)
+        elif self.method == "tcp":
+            self.trace_tcp(first_hop, max_hops, count, wait_threshold, ds, df,
+                           src, sport, dport, rand_sport, static_dport, data,
+                           callback)
+
+    @property
+    def results(self) -> list[TracerouteResultsPerHop]:
+        return self._tr_results
 
 
 def _get_default_color(k: str) -> str | RGB | Hex | None:
@@ -218,29 +414,58 @@ class _Colors:
 _colors: Final = _Colors()
 
 
-def _pretty_print_results(results: TracerouteResultsPerHop) -> None:
-    if results.probes_sent == 0:
-        probe_num = Color.color(str(results.probe_num), _colors.yellow)
-        print(f"{probe_num}. ", end="", flush=True)
-    if results.timeout_hit:
-        no_res = Color.color("- ", _colors.light_gray)
-        print(f"{no_res} ", end="", flush=True)
-    else:
-        if results.probes_sent == 0:
-            try:
-                hostname = socket.gethostbyaddr(results.host)[0]
-                hostname = Color.color(hostname, _colors.green)
-                host = Color.color(results.host, _colors.cyan)
-                print(f"{hostname} ({host}): ", end="", flush=True)
-            except socket.herror:
-                host = Color.color(results.host, _colors.green)
-                print(f"{host}: ", end="", flush=True)
-        rtt = Color.color(f"{results.rtt:.3f}", _colors.pink)
-        unit = Color.color("ms", _colors.light_pink)
-        print(f"{rtt}{unit} ", end="", flush=True)
-    if results.probes_sent == (results.retry_count - 1):
-        hop = Color.color(str(results.current_hop), _colors.yellow)
-        print(f"{Assets.LEFTWARDS_ARROW} (ttl={hop})", flush=True)
+def _signal_handler(signum: int, frame: FrameType | None) -> None:
+    if signum == signal.SIGINT:
+        sys.exit(0)
+
+
+def _startup_info(flags: Namespace) -> str:
+    prelude_data = {
+        "unet": ("traceroute", _colors.pink),
+        "destination host": (flags.host, _colors.pink),
+        "ip": (
+            socket.getaddrinfo(
+                flags.host,
+                None,
+                socket.AF_INET6 if flags.ip6 else socket.AF_INET,
+            )[0][4][0],
+            _colors.pink,
+        ),
+        "method": (flags.method, _colors.pink),
+        "first hop": (str(flags.first_hop), _colors.pink),
+        "max hops": (str(flags.max_hops), _colors.pink),
+        "packets per hop": (str(flags.count), _colors.pink),
+        "wait threshold": (f"{flags.wait_threshold}s", _colors.pink),
+    }
+    if flags.method in {"tcp", "udp"}:
+        prelude_data.update({
+            "source port": (str(flags.sport), _colors.pink),
+            "destination port": (str(flags.dport), _colors.pink),
+            "fixed destination port": (str(flags.static_dport).lower(), _colors.pink)
+        })
+
+    max_key_length = max(len(key) for key in prelude_data.keys())
+    prelude_parts = []
+
+    for key, (value, color) in prelude_data.items():
+        if key == "unet":
+            prelude_parts.append(f"{Color.color(key, color)}: {Color.color(value, color)}")
+            continue
+        elif key == "ip":
+            prelude_parts[-1] += f" ({Color.color(value, color)})"
+            continue
+        else:
+            formatted_key = f"{Color.color(key, _colors.green)}"
+            formatted_value = f"{Color.color(value, color)}"
+
+        padding = " " * (max_key_length - len(key) + 2)
+        prelude_parts.append(f"{formatted_key}:{padding}{formatted_value}")
+
+    return "\n  ".join(prelude_parts)
+
+
+def _summary(res: list[TracerouteResultsPerHop]) -> str:
+    return ""
 
 
 TRACEROUTE_FLAGS: Final = {
@@ -249,8 +474,17 @@ TRACEROUTE_FLAGS: Final = {
              "take to reach this target",
         type=str
     ),
+    "ip6": OptionFlag(
+        short="-6",
+        long="--ip6",
+        help="use IPv6",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
     "method": OptionFlag(
         short="-m",
+        long="--method",
         help="tell which protocol to use: [icmp, udp, tcp]",
         type=str,
         required=False,
@@ -263,7 +497,7 @@ TRACEROUTE_FLAGS: Final = {
         type=int,
         required=False,
         default=1,
-        metavar="<first_ttl>"
+        metavar="<n>"
     ),
     "max_hops": OptionFlag(
         short="-M",
@@ -271,25 +505,35 @@ TRACEROUTE_FLAGS: Final = {
         type=int,
         required=False,
         default=64,
-        metavar="<max_ttl>"
+        metavar="<n>"
     ),
-    "retry_count": OptionFlag(
-        short="-r",
+    "count": OptionFlag(
+        short="-c",
+        long="--count",
         help="set the number of packets per ttl",
         type=int,
         required=False,
         default=3,
         metavar="<n>"
     ),
-    "wait_limit": OptionFlag(
-        short="-w",
-        help="set the time to wait for a response",
-        type=float,
+    "saddr": OptionFlag(
+        short="-s",
+        help="use <addr> as the source address",
+        type=str,
         required=False,
-        default=3.0,
-        metavar="<n>",
+        default=None,
+        metavar="<addr>",
     ),
-    "df_bit": OptionFlag(
+    "ds": OptionFlag(
+        short="-q",
+        help="set differentiated services (as hex) (formerly 'tos' for IP and "
+             "'traffic class' for IPv6)",
+        type=lambda arg: int(arg, base=16),
+        required=False,
+        default=0,
+        metavar="<diffserv>",
+    ),
+    "df": OptionFlag(
         short="-D",
         help="set the 'Don't Fragment' flag",
         action="store_true",
@@ -297,7 +541,7 @@ TRACEROUTE_FLAGS: Final = {
         default=False,
     ),
     "sport": OptionFlag(
-        short="-s",
+        short="-e",
         help="set TCP/UDP source port",
         type=int,
         required=False,
@@ -312,9 +556,32 @@ TRACEROUTE_FLAGS: Final = {
         default=33435,
         metavar="<port>",
     ),
-    "ip6": OptionFlag(
-        short="-6",
-        help="use IPv6",
+    "rand_sport": OptionFlag(
+        short="-R",
+        help="randomize source port number",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
+    "static_dport": OptionFlag(
+        short="-F",
+        help="use fixed destination port for TCP and UDP methods",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
+    "wait_threshold": OptionFlag(
+        short="-d",
+        help="set the time (in seconds) to wait for a response",
+        type=float,
+        required=False,
+        default=5.0,
+        metavar="<n>",
+    ),
+    "summary": OptionFlag(
+        short="-S",
+        long="--summary",
+        help="",
         action="store_true",
         required=False,
         default=False,
@@ -322,12 +589,8 @@ TRACEROUTE_FLAGS: Final = {
 }
 
 
-def _signal_handler(signum: int, frame: FrameType | None) -> None:
-    if signum == signal.SIGINT:
-        sys.exit(0)
-
-
 def main(args: list[str]) -> None:
+    # Parser args
     parser = FlagParser(
         prog="traceroute",
         description="record the path packets take through the network to reach "
@@ -335,26 +598,76 @@ def main(args: list[str]) -> None:
     )
     parser.add_arguments(TRACEROUTE_FLAGS)
     flags = parser.parse_args(args)
-    header_parts = [
-        f"{Color.color('destination host', _colors.green)}: {Color.color(flags.host, _colors.pink)}",
-        f"{Color.color('method', _colors.green)}: {Color.color(flags.method, _colors.pink)}",
-        f"{Color.color('first hop', _colors.green)}: {Color.color(str(flags.first_hop), _colors.pink)}",
-        f"{Color.color('max hops', _colors.green)}: {Color.color(str(flags.max_hops), _colors.pink)}",
-        f"{Color.color('packets per hop', _colors.green)}: {Color.color(str(flags.retry_count), _colors.pink)}",
-        f"{Color.color('wait limit', _colors.green)}: {Color.color(str(flags.wait_limit), _colors.pink)}s"
-    ]
-    if flags.method in {"tcp", "udp"}:
-        header_parts.extend([
-            f"source port: {flags.sport}",
-            f"destination port: {flags.dport}"
-        ])
-    header = ", ".join(header_parts)
-    print("unet: traceroute: " + header, end="\n\n")
+
+    # Print startup info
+    startup_info = _startup_info(flags)
+    print(startup_info, end="\n\n")
+
+    # Run
     try:
+        # We use signals directly  because suddenly scapy just decided to don't
+        # react to keyboard interrupts
         signal.signal(signal.SIGINT, _signal_handler)
-        tracer = Traceroute(flags.host, flags.method)
-        tracer.trace(flags.first_hop, flags.max_hops, flags.retry_count, 0,
-                     flags.wait_limit, flags.df_bit, flags.sport, flags.dport,
-                     callback=_pretty_print_results)
+
+        prev_host = None
+        current_packet_num = 0
+        packets_left = 0
+
+        def _pretty_print_results(res: TracerouteResultsPerHop) -> None:
+            nonlocal prev_host, current_packet_num, packets_left
+
+            current_packet_num = res.packet
+            if not packets_left:
+                packets_left = res.count
+
+            if packets_left == res.count:
+                packet = Color.color(str(res.packet), _colors.yellow)
+                print(f"{packet}. ", end="", flush=True)
+
+            if res.timeout_hit:
+                no_res = Color.color("-", _colors.light_gray)
+                print(no_res + " ", end="", flush=True)
+            else:
+                if ((res.host != prev_host) and (prev_host is not None)
+                        and (packets_left != res.count)):
+                    print()
+                    print(" " * len(f"{res.packet}. "), end="")
+
+                if res.hostname != res.host:
+                    if packets_left == res.count or res.host != prev_host:
+                        hostname = Color.color(res.hostname, _colors.green)
+                        host = Color.color(res.host, _colors.cyan)
+                        print(f"{hostname} ({host}): ", end="", flush=True)
+                    else:
+                        print("", end="")
+                else:
+                    if packets_left == res.count or res.host != prev_host:
+                        host = Color.color(res.host, _colors.green)
+                        print(f"{host}: ", end="", flush=True)
+                    else:
+                        print("", end="")
+
+                rtt = (Color.color(f"{res.rtt:.3f}", _colors.pink)
+                       + Color.color("ms", _colors.light_pink))
+                print(rtt + " ", end="", flush=True)
+
+            prev_host = res.host
+            packets_left -= 1
+
+            if not packets_left:
+                print()
+
+        # Start the trace loop
+        tr = Traceroute(flags.host, flags.method, flags.ip6)
+        tr.trace(flags.first_hop, flags.max_hops, flags.count,
+                 flags.wait_threshold, flags.ds, flags.df, flags.saddr,
+                 flags.sport, flags.dport, flags.rand_sport, flags.static_dport,
+                 callback=partial(_pretty_print_results))
+
+        # Print summary if said so
+        if flags.summary:
+            res = tr.results
+            summary = _summary(res)
+            print("\n" + summary)
     except Exception as err:
         error(str(err))
