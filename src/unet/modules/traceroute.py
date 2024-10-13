@@ -439,7 +439,8 @@ def _startup_info(flags: Namespace) -> str:
     }
     if flags.method in {"tcp", "udp"}:
         prelude_data.update({
-            "source port": (str(flags.sport), _colors.pink),
+            "source port": ((str(flags.sport), _colors.pink)
+                            if not flags.rand_sport else ("random", _colors.pink)),
             "destination port": (str(flags.dport), _colors.pink),
             "fixed destination port": (str(flags.static_dport).lower(), _colors.pink)
         })
