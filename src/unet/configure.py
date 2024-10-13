@@ -41,7 +41,8 @@ def configure(dest_dir: str | None = None) -> None:
             },
             "fetched": "~/.config/unet/modules/fetched",
             "themes": {
-                "path": "~/.config/unet/modules/themes"
+                "path": "~/.config/unet/modules/themes",
+                "theme": None
             },
             "disabled": []
         },
