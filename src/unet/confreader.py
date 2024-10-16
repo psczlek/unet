@@ -56,7 +56,7 @@ class ConfReader:
                     print("{}")
 
                 for key, value in data.items():
-                    key = Color.color(key, "bold cyan")
+                    key = Color.color(key, "cyan")
                     print(f"{indent_str}{key}:")
                     json_print(value, indent + 1)
             elif isinstance(data, list):
@@ -70,5 +70,5 @@ class ConfReader:
                 data = Color.color(data, "green")
                 print(f"{indent_str}{data}")
 
-        print(f"path: {Color.yellow(str(self._file))}", end="\n\n")
+        print(f"path: {Color.blue(str(self._file))}", end="\n\n")
         json_print(self._data)

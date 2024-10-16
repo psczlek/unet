@@ -81,6 +81,37 @@ class Hex:
     bold: bool = False
 
 
+def _get_default_color(k: str) -> str | RGB | Hex | None:
+    colors: dict[str, tuple[str | None, str | RGB | Hex | None]] = {
+        # (ANSI, true)
+        "red": ("\x1b[0;31m", RGB(255, 92, 79)),
+        "light_red": ("\x1b[0;91", RGB(255, 86, 128)),
+        "green": ("\x1b[0;32m", RGB(5, 255, 125)),
+        "light_green": ("\x1b[0;92m", RGB(86, 255, 168)),
+        "yellow": ("\x1b[0;33m", RGB(253, 157, 99)),
+        "light_yellow": ("\x1b[0;93m", RGB(252, 185, 143)),
+        "blue": ("\x1b[0;34m", RGB(4, 165, 229)),
+        "light_blue": ("\x1b[0;94m", RGB(71, 184, 229)),
+        "pink": ("\x1b[0;35m", RGB(255, 71, 215)),
+        "light_pink": ("\x1b[0;95m", RGB(255, 135, 229)),
+        "cyan": ("\x1b[0;36m", RGB(28, 255, 228)),
+        "light_cyan": ("\x1b[0;96m", RGB(137, 255, 241)),
+        "gray": ("\x1b[0;38;5;240", RGB(120, 120, 120)),
+        "light_gray": ("\x1b[0;37", RGB(160, 160, 160)),
+    }
+
+    try:
+        if supports_true_color():
+            color = colors[k][1]
+        elif supports_colors():
+            color = colors[k][0]
+        else:
+            color = None
+        return color
+    except KeyError:
+        return None
+
+
 class Color:
     """
     Colorify terminal output.
@@ -107,20 +138,20 @@ class Color:
     }
 
     colors: dict[str, str | RGB | Hex] = {
-        "red": "\x1b[0;31m",
-        "light_red": "\x1b[0;91m",
-        "green": "\x1b[0;32m",
-        "light_green": "\x1b[0;92m",
-        "yellow": "\x1b[0;33m",
-        "light_yellow": "\x1b[0;93m",
-        "blue": "\x1b[0;34m",
-        "light_blue": "\x1b[0;94m",
-        "pink": "\x1b[0;35m",
-        "light_pink": "\x1b[0;95m",
-        "cyan": "\x1b[0;36m",
-        "light_cyan": "\x1b[0;96m",
-        "gray": "\x1b[0;38;5;240m",
-        "light_gray": "\x1b[0;37m",
+        "red": _get_default_color("red"),
+        "light_red": _get_default_color("light_red"),
+        "green": _get_default_color("green"),
+        "light_green": _get_default_color("light_green"),
+        "yellow": _get_default_color("yellow"),
+        "light_yellow": _get_default_color("light_yellow"),
+        "blue": _get_default_color("blue"),
+        "light_blue": _get_default_color("light_blue"),
+        "pink": _get_default_color("pink"),
+        "light_pink": _get_default_color("light_pink"),
+        "cyan": _get_default_color("cyan"),
+        "light_cyan": _get_default_color("light_cyan"),
+        "gray": _get_default_color("gray"),
+        "light_gray": _get_default_color("light_gray"),
         "normal": "\x1b[0m",
         "bold": "\x1b[1m",
         "highlight": "\x1b[3m",
@@ -204,7 +235,7 @@ class Color:
             String to be colored.
 
         color : RGB | Hex | str | None
-            Color name, tuple with RGB values or hex color code. (default None)
+            Color name, RGB colors object or Hex object. (default None)
 
         Returns
         -------
@@ -214,7 +245,15 @@ class Color:
         if color is None:
             return msg
         elif isinstance(color, str):
-            return Color.ansi(msg, color)
+            try:
+                if supports_true_color() and isinstance(Color.colors[color], RGB):
+                    return Color.rgb(msg, Color.colors[color])
+                elif supports_true_color() and isinstance(Color.colors[color], Hex):
+                    return Color.hex(msg, Color.colors[color])
+                else:
+                    return Color.ansi(msg, color)
+            except KeyError:
+                return Color.ansi(msg, color)
         elif isinstance(color, RGB):
             return Color.rgb(msg, color)
         elif isinstance(color, Hex):
@@ -242,8 +281,7 @@ class Color:
             return msg
 
         colors = Color.ANSI_COLORS
-        text = [colors[color]
-                for color in color_or_colors.split() if color in colors]
+        text = [colors[color] for color in color_or_colors.split() if color in colors]
 
         text.append(str(msg))
         text.append(colors["normal"])

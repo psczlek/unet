@@ -107,7 +107,7 @@ class HistoryRWP:
         if self._mode == "rb":
             return 0
 
-        datefmt = datetime.datetime.today().strftime("%Y-%m-%d %I:%M:%S.%f %p")
+        datefmt = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
         fmt = f"[{datefmt}]: {msg}\n"
 
         return self._fd.write(fmt)
@@ -123,24 +123,41 @@ class HistoryRWP:
         if self._mode != "rb":
             return
 
+        lines = []
+
         fsize = self._fpath.stat().st_size
-        max_x = shutil.get_terminal_size().columns
-        horizontal_line = Color.gray(Assets.HORIZONTAL_LINE) * max_x
-        vertical_line = Color.gray(Assets.VERTICAL_LINE)
-        str_path = str(self._fpath)
+        max_x = shutil.get_terminal_size().columns - 1
+
+        top_sep = Assets.HORIZONTAL_LINE * max_x
+        top_sep = Color.gray(
+            f"{top_sep[:2]}{Assets.TOP_T_INTERSECTION}{top_sep[2:]}")
+
+        middle_sep = Assets.HORIZONTAL_LINE * max_x
+        middle_sep = Color.gray(
+            f"{middle_sep[:2]}{Assets.CROSS}{middle_sep[2:]}")
+
+        bottom_sep = Assets.HORIZONTAL_LINE * max_x
+        bottom_sep = Color.gray(
+            f"{bottom_sep[:2]}{Assets.BOTTOM_T_INTERSECTION}{bottom_sep[2:]}")
+
+        edge_sep = Color.gray(Assets.VERTICAL_LINE)
 
         try:
-            print(f"{horizontal_line}\n"
-                  f"  {vertical_line} path: {Color.blue(str_path)}\n"
-                  f"{horizontal_line}")
+            str_path = Color.blue(str(self._fpath))
+            path_line = f"{top_sep}  {edge_sep} path: {str_path}\n{middle_sep}"
+            lines.append(path_line)
 
             while fsize > 0:
                 line = self._fd.readline()
-                msg = line.decode().split(": ")
-                print(f"  {vertical_line} {Color.yellow(msg[0])}: {Color.green(msg[1])}",
-                      end="")
+
+                time = Color.yellow(line.decode().split(": ")[0])
+                message = Color.green(line.decode().split(": ")[1].strip("\n"))
+
+                lines.append(f"  {edge_sep} {time}: {message}")
+
                 fsize -= len(line)
 
-            print(horizontal_line)
+            lines.append(bottom_sep)
+            print("\n".join(lines))
         except KeyboardInterrupt:
             self._fd.close()

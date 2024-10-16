@@ -55,7 +55,7 @@ class Group:
 
 
 def _get_default_color(k: str) -> str | RGB | Hex | None:
-    default_colors: dict[str, tuple[str | None, str | RGB | Hex | None]] = {
+    colors: dict[str, tuple[str | None, str | RGB | Hex | None]] = {
         "usage_prefix": ("green bold", RGB(4, 165, 229, bold=True)),
         "usage_prog": ("green", RGB(125, 199, 230)),
         "description": ("yellow", RGB(255, 245, 160)),
@@ -67,9 +67,9 @@ def _get_default_color(k: str) -> str | RGB | Hex | None:
 
     try:
         if supports_true_color():
-            color = default_colors[k][1]
+            color = colors[k][1]
         elif supports_colors():
-            color = default_colors[k][0]
+            color = colors[k][0]
         else:
             color = None
         return color

@@ -23,33 +23,30 @@ def _error(message: str) -> None:
 
 
 def _usage() -> str:
-    from unet.flag import FlagHelpFormatterColor
-
-    colors = FlagHelpFormatterColor()
     message = [
         "%s: %s <%s> <%s>" % (
-            Color.color("usage", colors.usage_prefix),
-            Color.color("unet", colors.usage_prog),
-            Color.color("tool name", colors.flag),
-            Color.color("options", colors.metavar),
+            Color.color("usage", "blue"),
+            Color.color("unet", "light_blue"),
+            Color.color("tool name", "blue"),
+            Color.color("options", "yellow"),
         ),
         "       %s <%s>" % (
-            Color.color("unet", colors.usage_prog),
-            Color.color("options", colors.metavar),
+            Color.color("unet", "light_blue"),
+            Color.color("options", "yellow"),
         ),
         "\nrun '%s %s <%s>' for more information on a specific "
         "tool." % (
-            Color.color("unet", colors.usage_prog),
-            Color.color("help", colors.flag),
-            Color.color("tool name", colors.flag),
+            Color.color("unet", "light_blue"),
+            Color.color("help", "blue"),
+            Color.color("tool name", "blue"),
         ),
         "run '%s %s' to list all available tools" % (
-            Color.color("unet", colors.usage_prog),
-            Color.color("--list-tools", colors.flag),
+            Color.color("unet", "light_blue"),
+            Color.color("--list-tools", "blue"),
         ),
         "run '%s %s' to quickly create a blank tool" % (
-            Color.color("unet", colors.usage_prog),
-            Color.color("new -n <name> -p <path>", colors.flag),
+            Color.color("unet", "light_blue"),
+            Color.color("new -n <name> -p <path>", "blue"),
         ),
     ]
 
@@ -79,9 +76,7 @@ def main(args: list[str]) -> None:
             # Get the size of the file in bytes
             file_size = hist_file.stat().st_size
 
-            # Check if the file size is greater than or equal to 5KiB
             if file_size >= 5 * 1024:
-                # Delete the large file
                 hist_file.unlink()
 
         with HistoryRWP(str(hist_file), "write") as hist:
@@ -216,16 +211,13 @@ def main(args: list[str]) -> None:
             _error(f"module '{remaining_args[0]}' does not exist, or was not loaded")
 
     if flags.lflag:
-        from unet.flag import FlagHelpFormatterColor
-
-        colors = FlagHelpFormatterColor()
         mod_num = 1
 
         for name, handle in module_handles.items():
-            num = Color.color(str(mod_num), colors.metavar)
-            name = Color.color(name, colors.flag)
-            sep = Color.color(Assets.RIGHTWARDS_ARROW, colors.usage_prog)
-            handle_path = Color.color(handle.__file__, colors.description)
+            num = Color.color(str(mod_num), "yellow")
+            name = Color.color(name, "blue")
+            sep = Color.color(Assets.RIGHTWARDS_ARROW, "light_gray")
+            handle_path = Color.color(handle.__file__, "light_yellow")
 
             print(f"{num}. {name} {sep} from {handle_path}")
 
