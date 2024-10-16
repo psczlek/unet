@@ -879,7 +879,7 @@ def main(args: list[str]) -> None:
             DLT_RAW: 0,
             DLT_ATM_CLIP: 8,
             DLT_PPP_SERIAL: 4,
-            DLT_PPP_SERIAL: 6,
+            DLT_PPP_ETHER: 6,
             DLT_C_HDLC: 4,
             DLT_IEEE802_11: 14,
             DLT_FRELAY: 4,
@@ -887,6 +887,9 @@ def main(args: list[str]) -> None:
             DLT_IPV4: 0,
             DLT_IPV6: 0,
             DLT_LOOP: 4,
+            DLT_ENC: 12,
+            DLT_LINUX_SLL: 16,
+            DLT_LINUX_SLL2: 20,
         }
         linkhdrlen = linkhdrlen_map[dissect.live_linktype]
 
