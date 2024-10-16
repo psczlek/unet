@@ -798,7 +798,7 @@ class Field:
 
 
 def _get_default_colors(k: str) -> str | RGB | Hex | None:
-    default_colors: dict[str, tuple[str | None, RGB | Hex | None]] = {
+    colors: dict[str, tuple[str | None, RGB | Hex | None]] = {
         "protocol": ("cyan bold", RGB(204, 136, 252, bold=True)),
         "name": ("blue", RGB(136, 202, 252)),
         "value": ("pink", RGB(255, 191, 243)),
@@ -816,9 +816,9 @@ def _get_default_colors(k: str) -> str | RGB | Hex | None:
     }
     try:
         if supports_true_color():
-            color = default_colors[k][1]
+            color = colors[k][1]
         elif supports_colors():
-            color = default_colors[k][0]
+            color = colors[k][0]
         else:
             color = None
         return color
@@ -2754,6 +2754,9 @@ class Dissect(LiveCapture, DeadCapture):
         else:
             f.add_field("from", self._current_file)
 
+        f.add_field("arrival time (absolute)",
+                    (time.strftime("%H:%M:%S", time.localtime(timestamp[0]))
+                     + f".{timestamp[1]}"))
         f.add_field("arrival time (since epoch)", f"{timestamp[0]}.{timestamp[1]}")
         f.add_field("linktype", pkti.linktype, alt_value=pkti.linktype_name,
                     alt_value_brackets=("(", ")"), alt_sep=" ")

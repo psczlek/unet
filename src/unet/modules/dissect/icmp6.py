@@ -438,7 +438,7 @@ def icmp6_param_prob_dissect(
 
     # Pointer
     ptr = struct.unpack("!I", buf[4:8])[0]
-    f.add_field("unused", ptr)
+    f.add_field("pointer", ptr)
 
     # Info
     info = f"{ICMPV6_TYPE_MAP[buf[0]]} ({buf[1]})"
