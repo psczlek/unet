@@ -7,7 +7,7 @@ try:
     logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
     from scapy.layers.inet6 import IPv6, fragment6
-    from scapy.packet import Raw, raw
+    from scapy.packet import Raw
     from scapy.sendrecv import send
 except ModuleNotFoundError:
     from unet.modules.ping import error

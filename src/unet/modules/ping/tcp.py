@@ -1,4 +1,3 @@
-import secrets
 import socket
 import struct
 from collections.abc import Callable

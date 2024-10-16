@@ -10,8 +10,8 @@ from typing import Final
 
 from unet.coloring import Color
 from unet.confreader import ConfReader
-from unet.printing import Assets, eprint, wprint
 from unet.flag import FlagParser, OptionFlag
+from unet.printing import Assets, eprint, wprint
 
 try:
     from git import GitCommandError, Repo

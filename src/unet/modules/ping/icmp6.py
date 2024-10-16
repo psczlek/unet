@@ -1,5 +1,5 @@
-import struct
 import socket
+import struct
 from collections.abc import Callable
 from typing import Final
 
@@ -10,7 +10,7 @@ try:
     from scapy.layers.inet6 import (ICMPv6DestUnreach, ICMPv6EchoReply,
                                     ICMPv6EchoRequest, ICMPv6PacketTooBig,
                                     ICMPv6ParamProblem, ICMPv6TimeExceeded,
-                                    ICMPv6Unknown, checksum)
+                                    checksum)
     from scapy.packet import Raw, raw
 except ModuleNotFoundError:
     from unet.modules.ping import error

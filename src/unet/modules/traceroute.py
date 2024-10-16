@@ -450,7 +450,8 @@ def _startup_info(flags: Namespace) -> str:
 
     for key, (value, color) in prelude_data.items():
         if key == "unet":
-            prelude_parts.append(f"{Color.color(key, color)}: {Color.color(value, color)}")
+            prelude_parts.append(
+                f"{Color.color(key, color)}: {Color.color(value, color)}:")
             continue
         elif key == "ip":
             prelude_parts[-1] += f" ({Color.color(value, color)})"

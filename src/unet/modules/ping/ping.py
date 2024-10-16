@@ -883,7 +883,6 @@ def main(args: list[str]) -> None:
             DLT_C_HDLC: 4,
             DLT_IEEE802_11: 14,
             DLT_FRELAY: 4,
-            DLT_ENC: 13,
             DLT_IPV4: 0,
             DLT_IPV6: 0,
             DLT_LOOP: 4,
