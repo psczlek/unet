@@ -436,7 +436,7 @@ def hexstr(buf: bytes, limit: int, indent: int = 0) -> str:
         Converted bytes.
     """
     hex_string = "".join(f"{byte:02x}" for byte in buf)
-    hex_string = hex_string[:limit]
+    hex_string = hex_string[:(limit * 2)]
     if indent:
         hex_string = " " * indent + hex_string
     return hex_string
