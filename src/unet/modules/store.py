@@ -175,12 +175,21 @@ class Store:
             for index, item in enumerate(matched_modules.items(), start=1):
                 line_print(index, item[0], item[1])
             print(border_bottom)
+            mod_index = int(input('  Index of a module to install\n  '))
+            print(f"  {vline} INSTALLING...")
+            print(border_bottom)
+            line_print(1, list(matched_modules)[mod_index-1], matched_modules.get(list(matched_modules)[mod_index-1]))
+            print(border_bottom)
+            self.fetch(matched_modules.get(list(matched_modules)[mod_index-1]))
             
+        elif len(matched_modules) == 1:
+            print(f"  {vline} INSTALLING...")
+            print(border_bottom)
+            line_print(1, list(matched_modules)[0], matched_modules.get(list(matched_modules)[0]))
+            print(border_bottom)
+            self.fetch(matched_modules.get(list(matched_modules)[0]))
         else:
-            for key, value in matched_modules.items():
-                print(border_bottom)
-                line_print(0, key, value)
-                print(border_bottom)
+            print("No modules corresponds, try again")
 
     def find(self, which: str, /) -> None:
         """
