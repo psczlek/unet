@@ -83,15 +83,11 @@ def main(args: list[str]) -> None:
             invoked_command = "unet " + " ".join(args)
             hist.write(invoked_command)
 
-    # Check for updates and fetch the latest version if needed
-    if conf_data["auto_update"]:
-        pass
-
     # Load modules
     to_load: set[Path] = set()
     built_in_modules_path = Path(__file__.strip("main.py")) / Path("modules")
     external_modules_path = Path(conf_data["modules"]["external"]["path"]).expanduser().resolve()
-    fetched_modules_path = Path(conf_data["modules"]["fetched"]).expanduser().resolve()
+    fetched_modules_path = Path(conf_data["modules"]["fetched"]["path"]).expanduser().resolve()
 
     excluded = {"__init__.py", "__pycache__"}
 

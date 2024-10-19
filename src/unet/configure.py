@@ -39,18 +39,17 @@ def configure(dest_dir: str | None = None) -> None:
             "external": {
                 "path": "~/.config/unet/modules"
             },
-            "fetched": "~/.config/unet/modules/fetched",
-            "public_url": "https://github.com/theosfa/unet-ext-modules",
-            "public_list": "~/.config/unet/modules/unet-ext-modules",
-            "themes": {
-                "path": "~/.config/unet/modules/themes",
-                "theme": None
+            "fetched": {
+                "path": "~/.config/unet/modules/fetched",
+            },
+            "public": {
+                "url": "https://github.com/theosfa/unet-ext-modules",
+                "list": "~/.config/unet/modules/unet-ext-modules",
             },
             "disabled": []
         },
         "history": True,
         "history_file_path": "~/.config/unet/unet_history.txt",
-        "auto_update": True,
         "colors": True
     }
 
