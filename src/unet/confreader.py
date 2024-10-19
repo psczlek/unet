@@ -49,26 +49,34 @@ class ConfReader:
         """
 
         def json_print(data: dict[str, Any], indent: int = 0) -> None:
-            indent_str = "  " * indent
+            indent_str = " " * indent
 
             if isinstance(data, dict):
                 if len(data) == 0:
-                    print("{}")
+                    print(f"{indent_str}{{}}")
 
                 for key, value in data.items():
-                    key = Color.color(key, "cyan")
-                    print(f"{indent_str}{key}:")
-                    json_print(value, indent + 1)
+                    key_colored = Color.color(key, "cyan")
+                    if isinstance(value, (dict, list)):
+                        print(f"{indent_str}{key_colored}:")
+                        json_print(value, indent + 2)
+                    else:
+                        value_colored = Color.color(value, "green")
+                        print(f"{indent_str}{key_colored}: {value_colored}")
             elif isinstance(data, list):
                 if len(data) == 0:
-                    print(f"{indent_str}[]")
+                    print(f"{indent_str}* none")
 
                 for item in data:
-                    print(f"{indent_str}-")
-                    json_print(item, indent + 1)
+                    if isinstance(item, (dict, list)):
+                        print(f"{indent_str}-")
+                        json_print(item, indent + 2)
+                    else:
+                        item_colored = Color.color(item, "green")
+                        print(f"{indent_str}- {item_colored}")
             else:
-                data = Color.color(data, "green")
-                print(f"{indent_str}{data}")
+                value_colored = Color.color(data, "green")
+                print(f"{indent_str}{value_colored}")
 
         print(f"path: {Color.blue(str(self._file))}", end="\n\n")
         json_print(self._data)
