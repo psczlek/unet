@@ -40,6 +40,8 @@ def configure(dest_dir: str | None = None) -> None:
                 "path": "~/.config/unet/modules"
             },
             "fetched": "~/.config/unet/modules/fetched",
+            "public-url": "https://github.com/theosfa/unet-ext-modules",
+            "public-list": "~/.config/unet/modules/unet-ext-modules",
             "themes": {
                 "path": "~/.config/unet/modules/themes",
                 "theme": None

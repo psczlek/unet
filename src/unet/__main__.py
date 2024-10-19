@@ -1,7 +1,9 @@
 from unet.configure import configure, is_configured
+from unet.modules.store import fetch_list
 
 if not is_configured():
     configure()
+    fetch_list()
 
 import platform
 import sys
