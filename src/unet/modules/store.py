@@ -20,8 +20,39 @@ except ModuleNotFoundError:
            "\n         pip install GitPython"
            "\n         pip3 install GitPython")
 
-__all__ = ["Store"]
+max_x = shutil.get_terminal_size().columns
+border_top = Color.gray(Assets.HORIZONTAL_LINE * 2
+                        + Assets.TOP_T_INTERSECTION
+                        + Assets.HORIZONTAL_LINE * (max_x - 3))
+border_middle = Color.gray(Assets.HORIZONTAL_LINE * 2
+                            + Assets.CROSS
+                            + Assets.HORIZONTAL_LINE * (max_x - 3))
+vline = Color.gray(Assets.VERTICAL_LINE)
+border_bottom = Color.gray(Assets.HORIZONTAL_LINE * 2
+                            + Assets.BOTTOM_T_INTERSECTION
+                            + Assets.HORIZONTAL_LINE * (max_x - 3))
 
+def path_print(path: str) -> None:
+    fmt = f"{border_top}\n  {vline} path: {Color.blue(path)}\n{border_middle}"
+    print(fmt)
+
+def line_print(index: int, key: str, value: str) -> None:
+    fmt = f"  {vline} {Color.red(index)} {vline} {Color.cyan(key)}: {Color.yellow(value)}"
+    print(fmt)
+
+__all__ = ["Store", "fetch_list"]
+
+def fetch_list():
+    cr = ConfReader("~/.config/unet/config.json")
+    conf_data = cr.read()
+    which = conf_data["modules"]["public_url"]
+    fetched_path = Path(conf_data["modules"]["public_list"]).expanduser().resolve()
+    # print(fetched_path)
+    try:
+        # clone the repository into the separate folder
+        Repo.clone_from(which, fetched_path)
+    except Exception as e:
+        eprint(f"an error occurred: {e}")
 
 class Store:
     """
@@ -38,6 +69,8 @@ class Store:
         if not self._module_list_file.exists():
             with open(self._module_list_file, "w") as file:
                 json.dump({}, file)
+    
+    
 
     def fetch(self, which: str, /) -> None:
         """
@@ -104,6 +137,93 @@ class Store:
                     print(f"repository '{which}' not found in the list")
         except Exception as e:
             eprint(f"an error occurred: {e}")
+    
+    def install(self, which: str, /) -> None:
+        """
+        Install a module from public list.
+
+        Parameters
+        ----------
+        which : str
+            Name of a module to install.
+
+        Returns
+        -------
+        None
+        """
+
+        cr = ConfReader("~/.config/unet/config.json")
+        conf_data = cr.read()
+        ext_mod_list_path = Path(conf_data["modules"]["public_list"]).expanduser().resolve()
+        ext_mod_list = ext_mod_list_path / "modules.json"
+        matched_modules = {}
+        try:
+            with open(ext_mod_list, "r") as file:
+                data = json.load(file)
+                if data:
+                    for key, value in data.items():
+                        if which in key or key in which:
+                            matched_modules[key] = value
+                else:
+                    print("no repositories are currently installed")
+        except KeyboardInterrupt:
+            return
+        except Exception as e:
+            eprint(f"an error occurred: {e}")
+        if len(matched_modules) > 1:
+            print(border_bottom)
+            for index, item in enumerate(matched_modules.items(), start=1):
+                line_print(index, item[0], item[1])
+            print(border_bottom)
+            
+        else:
+            for key, value in matched_modules.items():
+                print(border_bottom)
+                line_print(0, key, value)
+                print(border_bottom)
+
+    def find(self, which: str, /) -> None:
+        """
+        Find a module from public list.
+
+        Parameters
+        ----------
+        which : str
+            Name of a module to find.
+
+        Returns
+        -------
+        None
+        """
+        
+
+        cr = ConfReader("~/.config/unet/config.json")
+        conf_data = cr.read()
+        ext_mod_list_path = Path(conf_data["modules"]["public_list"]).expanduser().resolve()
+        ext_mod_list = ext_mod_list_path / "modules.json"
+        matched_modules = {}
+        try:
+            with open(ext_mod_list, "r") as file:
+                data = json.load(file)
+                if data:
+                    for key, value in data.items():
+                        if which in key or key in which:
+                            matched_modules[key] = value
+                else:
+                    print("no repositories are currently installed")
+        except KeyboardInterrupt:
+            return
+        except Exception as e:
+            eprint(f"an error occurred: {e}")
+        if matched_modules:
+            path_print(ext_mod_list_path)
+            for index, item in enumerate(matched_modules.items(), start=1):
+                line_print(index, item[0], item[1])
+            print(border_bottom)
+        else:
+            print("No matched modules")
+        
+
 
     def update(self, which: str, /) -> None:
         """
@@ -208,6 +328,39 @@ class Store:
             return
         except Exception as e:
             eprint(f"an error occurred: {e}")
+    
+    def list_public(self) -> None:
+        """
+        Find a module from public list.
+
+        Parameters
+        ----------
+        which : str
+            Name of a module to find.
+
+        Returns
+        -------
+        None
+        """
+
+        cr = ConfReader("~/.config/unet/config.json")
+        conf_data = cr.read()
+        ext_mod_list_path = Path(conf_data["modules"]["public_list"]).expanduser().resolve()
+        ext_mod_list = ext_mod_list_path / "modules.json"
+        try:
+            with open(ext_mod_list, "r") as file:
+                data = json.load(file)
+                if data:
+                    path_print(ext_mod_list_path)
+                    for index, item in enumerate(data.items(), start=1):
+                        line_print(index, item[0], item[1])
+                    print(border_bottom)
+                else:
+                    print("no repositories are currently installed")
+        except KeyboardInterrupt:
+            return
+        except Exception as e:
+            eprint(f"an error occurred: {e}")
 
 
 STORE_FLAGS: Final = {
@@ -218,6 +371,14 @@ STORE_FLAGS: Final = {
         required=False,
         default=None,
         metavar="<link>"
+    ),
+    "install": OptionFlag(
+        short="-i",
+        help="install public module",
+        type=str,
+        required=False,
+        default=None,
+        metavar="<rep_name>"
     ),
     "remove": OptionFlag(
         short="-r",
@@ -235,9 +396,24 @@ STORE_FLAGS: Final = {
         default=None,
         metavar="<rep_name>"
     ),
+    "find": OptionFlag(
+        short="-F",
+        help="find public module",
+        type=str,
+        required=False,
+        default="",
+        metavar="<rep_name>"
+    ),
     "list": OptionFlag(
         short="-l",
         help="list all modules",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
+    "list_public": OptionFlag(
+        short="-L",
+        help="list all public modules",
         action="store_true",
         required=False,
         default=False,
@@ -272,6 +448,12 @@ def main(args: list[str]) -> None:
         store.remove(flags.remove)
     if flags.update:
         store.update(flags.update)
+    if flags.list_public:
+        store.list_public()
+    if flags.find:
+        store.find(flags.find)
+    if flags.install:
+        store.install(flags.install)
     if flags.list:
         store.lists()
     if flags.peek_for_update:
