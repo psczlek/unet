@@ -105,6 +105,11 @@ On the first run, unet will create a configuration directory at `~/.config/unet`
 where it will store its config file, directories for external modules, and the
 history file.
 
+### Public modules 
+
+If you want to add some modules you think will be usefull, add them to public
+github repository and add *name* and *link* to our [list of public modules](https://github.com/theosfa/unet-ext-modules)
+
 ## License
 
 This project is released under the BSD 3-Clause license.

@@ -10,10 +10,14 @@ license = {text = "BSD-3-Clause"}
 authors = [
     {name = "Cyprian Czaja"},
     {name = "Cyprian Czaja", email = "cyprian_cc@protonmail.com"},
+    {name = "Fedor Alekseyev"},
+    {name = "Fedor Alekseyev", email = "theos.fa@gmail.com"},
 ]
 maintainers = [
     {name = "Cyprian Czaja"},
     {name = "Cyprian Czaja", email = "cyprian_cc@protonmail.com"},
+    {name = "Fedor Alekseyev"},
+    {name = "Fedor Alekseyev", email = "theos.fa@gmail.com"},
 ]
 dependencies = [
     "scapy>=2.5.0",

@@ -385,6 +385,10 @@ class Store:
         ext_mod_list_path = Path(conf_data["modules"]["public"]["list"]).expanduser().resolve()
         ext_mod_list = ext_mod_list_path / "modules.json"
 
+        repo = Repo(ext_mod_list_path)
+        repo.remote().pull()
+        _print_status(f"Extended modules list updated")
+
         try:
             with open(ext_mod_list, "r") as file:
                 data = json.load(file)
