@@ -58,7 +58,11 @@ def ip6_proto_chksum(
             dst_ip = inet_pton(AF_INET6, dst)
             upper_layer_packet_length = struct.pack("!L", length)
             zeros = struct.pack("!BBB", 0, 0, 0)
-            self.ph = src_ip + dst_ip + upper_layer_packet_length + zeros + struct.pack("!B", proto)
+            self.ph = (src_ip
+                       + dst_ip
+                       + upper_layer_packet_length
+                       + zeros
+                       + struct.pack("!B", proto))
 
     ph = PseudoHeaderV6(src, dst, proto, length)
     buff = ph.ph + buf
