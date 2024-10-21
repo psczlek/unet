@@ -137,7 +137,7 @@ class Color:
         "highlight": "\x1b[3m",
     }
 
-    colors: dict[str, str | RGB | Hex] = {
+    colors: dict[str, str | RGB | Hex | None] = {
         "red": _get_default_color("red"),
         "light_red": _get_default_color("light_red"),
         "green": _get_default_color("green"),
