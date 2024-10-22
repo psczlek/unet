@@ -1666,7 +1666,8 @@ class LiveCapture:
             )
 
             # Loop break
-            if status == -2 or self._status == -2:
+            if ((status == -2) or (self._status == -2)
+                    or (self.count == self._live_stats.qcap)):
                 pcap.close(self._lpd)
                 break
             # Error
@@ -3036,9 +3037,48 @@ FLAGS: Final[dict[str, PositionalFlag | OptionFlag | Group]] = {
                 action="store_true",
                 required=False,
                 default=False,
-            )
+            ),
         }
-    )
+    ),
+    "examples": Group(
+        arguments={},
+        description="\n".join([
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-i')} "
+            "eth0",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-i')} "
+            f"eth0 {Color.yellow('-j -n')}",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-i')} "
+            f"eth0 {Color.yellow('-jnaX')}",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-r')} "
+            f"packets.pcap {Color.yellow('-jnvXx')}",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-i')} "
+            f"eth0 {Color.yellow('-ea')}",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-r')} "
+            f"packets.pcap {Color.yellow('-jnve')}",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-r')} "
+            f"packet-1.pcap,packet-2.pcap {Color.yellow('-jnae')}",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-i')} "
+            f"eth0 {Color.yellow('-D')} hi_mom_dissectors {Color.yellow('-jn')}",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-i')} "
+            f"eth0 {Color.yellow('-gIN -w')} capture_file",
+
+            f"{Color.blue('unet')} {Color.cyan('dissect')} {Color.yellow('-i')} "
+            f"eth0 {Color.yellow('-g')} {Color.yellow('-w')} capture_file "
+            f"{Color.yellow('-m')} 5 {Color.yellow('-M')} 5120",
+
+            f"\n{Color.color('NOTE', 'yellow bold')}:",
+            "  when invoking the above commands, please make sure, the appropriate ",
+            "  interface is used or a capture file exists",
+        ]),
+    ),
 }
 
 

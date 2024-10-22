@@ -16,7 +16,7 @@ from types import FrameType
 from typing import Final
 
 from unet.coloring import RGB, Color, Hex, supports_colors, supports_true_color
-from unet.flag import FlagParser, OptionFlag, PositionalFlag
+from unet.flag import FlagParser, Group, OptionFlag, PositionalFlag
 from unet.printing import eprint
 
 
@@ -587,6 +587,25 @@ TRACEROUTE_FLAGS: Final = {
         action="store_true",
         required=False,
         default=False,
+    ),
+    "examples": Group(
+        arguments={},
+        description="\n".join([
+            f"{Color.blue('unet')} {Color.cyan('traceroute')} google.com",
+
+            f"{Color.blue('unet')} {Color.cyan('traceroute')} {Color.yellow('-m')} "
+            "udp upsl.edu.pl",
+
+            f"{Color.blue('unet')} {Color.cyan('traceroute')} {Color.yellow('-m')} "
+            f"tcp {Color.yellow('-R')} {Color.yellow('-p')} 80 scanme.nmap.org "
+            f"{Color.yellow('-F')}",
+
+            f"{Color.blue('unet')} {Color.cyan('traceroute')} google.com "
+            f"{Color.yellow('-d')} 1 {Color.yellow('-c')} 5",
+
+            f"{Color.blue('unet')} {Color.cyan('traceroute')} upsl.edu.pl "
+            f"{Color.yellow('-m')} tcp {Color.yellow('-p')} 443 {Color.yellow('-R -F -d')} 1",
+        ]),
     ),
 }
 

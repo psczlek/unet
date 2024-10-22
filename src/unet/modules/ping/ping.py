@@ -709,9 +709,33 @@ PING_FLAGS: Final = {
 }
 
 
+_EXAMPLES_OF_USAGE: Final = {
+    "examples": Group(
+        arguments={},
+        description="\n".join([
+            f"{Color.blue('unet')} {Color.cyan('ping')} facebook.com",
+
+            f"{Color.blue('unet')} {Color.cyan('ping')} google.com "
+            f"{Color.yellow('-m')} tcp {Color.yellow('-p')} 443 "
+            f"{Color.yellow('--tcp-flags')} syn {Color.yellow('--tcp-opt')} "
+            f"mss,ws,sackp,nop,nop,eol {Color.yellow('--num --timestamp')} "
+            f"{Color.yellow('-c')} 2",
+
+            f"{Color.blue('unet')} {Color.cyan('ping')} {Color.yellow('-m')} udp "
+            f"microsoft.com {Color.yellow('-p')} 53 {Color.yellow('-c')} 3 "
+            f"{Color.yellow('--num --timestamp --verbose --sum-ok')}",
+
+            f"{Color.blue('unet')} {Color.cyan('ping')} 192.168.0.1 "
+            f"{Color.yellow('-m')} tcp {Color.yellow('--tcp-flags')} rst "
+            f"{Color.yellow('-p')} 80 {Color.yellow('--num --timestamp')}",
+        ]),
+    ),
+}
+
+
 def main(args: list[str]) -> None:
     parser = FlagParser(prog="ping", description="almost arbitrary packet manipulation")
-    ping_flags: dict[str, Group | PositionalFlag | OptionFlag] = PING_FLAGS | _build_ping_flags(None)
+    ping_flags: dict[str, Group | PositionalFlag | OptionFlag] = PING_FLAGS | _build_ping_flags(None) | _EXAMPLES_OF_USAGE
     parser.add_arguments(ping_flags)
     flags = parser.parse_args(args)
 
