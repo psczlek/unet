@@ -487,7 +487,7 @@ def eth_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     dst_field.name = "destination mac"
     src_field.name = "source mac"
 
-    dump = f.line("dst", Assets.RIGHTWARDS_ARROW, "src", type="type")
+    dump = f.line("src", Assets.RIGHTWARDS_ARROW, "dst", type="type")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
