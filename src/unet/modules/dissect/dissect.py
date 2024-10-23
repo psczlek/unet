@@ -832,45 +832,6 @@ class FieldFormatter:
 
         return field
 
-    def add_note(
-            self,
-            offset: int,
-            contents: str,
-            prefix: str | None = None,
-            prefix_sep: str = ":",
-            notes: list[Note] | None = None,
-    ) -> Note | None:
-        """
-        This function lacks documentation.
-
-        Parameters
-        ----------
-        contents : str
-            Comment to store.
-
-        prefix : str | None
-            A string preceding contents. (default: None)
-
-        prefix_sep : str
-            A character separating prefix from contents. (default: ":")
-
-        notes: list[Note] | None
-            Further comments which will be attached to the note. (default: None)
-
-        Returns
-        -------
-        Note
-            The Note object with the supplied attributes.
-        """
-        if len(prefix_sep) > 1:
-            prefix_sep = prefix_sep[0]
-
-        note = Note(contents, prefix, prefix_sep, notes)
-
-        self._notes[offset] = note
-
-        return note
-
     def line(self, *args: str, **kwargs: str) -> str:
         """
         Short, one line representation
@@ -2946,14 +2907,6 @@ FLAGS: Final[dict[str, PositionalFlag | OptionFlag | Group]] = {
         required=False,
         default=None,
         metavar="<path>",
-    ),
-    "kflag": OptionFlag(
-        short="-k",
-        long="--no-color",
-        help="disable colors",
-        action="store_false",
-        required=False,
-        default=False,
     ),
     "output options": Group(
         arguments={
