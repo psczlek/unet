@@ -569,7 +569,10 @@ def summary(stat: Statistics, opt: PingOptions) -> str:
         loss_rate = 100 * (stat.sent - stat.recv) / stat.sent
 
     # Packet loss information
-    contents["lost"] = "-" if stat.sent == -1 and stat.recv == -1 else f"{int(stat.lost)} ({loss_rate:.2f} %)"
+    if not "transmitted by kernel" in contents:
+        contents["lost"] = "-" if stat.sent == -1 and stat.recv == -1 else f"{int(stat.lost)} ({loss_rate:.2f} %)"
+    else:
+        contents["lost"] = "-" if not loss_rate else f"{int(stat.lost)} ({loss_rate:.2f} %)"
 
     # RTT information
     contents["rtt max"] = f"{stat.rtt_max:.6f} ms" if stat.rtt_max else "n/a"
