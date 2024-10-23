@@ -9,8 +9,25 @@ from unet.modules.dissect import (FieldFormatter, Layer, PacketInfo,
 from unet.printing import Assets
 
 __all__ = [
+    "TCP",
     "TCP_HDRLEN",
     "TCPFlag",
+    "TCP_FLAG_MAP",
+    "TCPOpt",
+    "TCP_OPT_MAP",
+    "TCP_OPT_MIN_LEN_MAP",
+    "tcp_opt_common_dissect",
+    "tcp_opt_eol_or_nop_dissect",
+    "tcp_opt_mss_dissect",
+    "tcp_opt_ws_dissect",
+    "tcp_opt_sack_perm_dissect",
+    "tcp_opt_sack_dissect",
+    "tcp_opt_ts_dissect",
+    "tcp_opt_unk_dissect",
+    "tcp_opt_dissect",
+    "tcp_dissect",
+    "register_dissector_tcp",
+    "create_dissector_entry",
 ]
 
 

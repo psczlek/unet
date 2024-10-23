@@ -11,6 +11,7 @@ from unet.printing import Assets
 
 __all__ = [
     "lookup_oui",
+    "Eth",
     "ETH_HDRLEN",
     "EtherType",
     "ETHERTYPE_MAP",

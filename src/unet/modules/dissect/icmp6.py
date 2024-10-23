@@ -18,6 +18,7 @@ __all__ = [
     "icmp6_echo_dissect",
     "icmp6_unk_dissect",
     "icmp6_dissect",
+    "register_dissector_icmp6",
 ]
 
 

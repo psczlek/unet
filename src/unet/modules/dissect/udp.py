@@ -8,7 +8,13 @@ from unet.modules.dissect import (FieldFormatter, Layer, PacketInfo,
 from unet.modules.dissect.ip import IPProto
 from unet.printing import Assets
 
-__all__ = ["UDP_HDRLEN", "udp_dissect", "register_dissector_udp"]
+__all__ = [
+    "UDP_HDRLEN",
+    "UDP",
+    "udp_dissect",
+    "register_dissector_udp",
+    "create_dissector_entry",
+]
 
 
 UDP_HDRLEN: Final = 8

@@ -30,7 +30,22 @@ __all__ = [
     "IP_OPT_MAP",
     "ip_opt_dissect",
     "ip_opt_eol_or_nop_dissect",
+    "ip_opt_sec_dissect",
+    "ip_opt_route_dissect",
+    "ip_opt_ts_dissect",
+    "ip_opt_sid_dissect",
+    "ip_opt_rtralt_dissect",
+    "ip_opt_mtu_dissect",
+    "ip_opt_traceroute_dissect",
+    "ip_opt_cipso_dissect",
+    "ip_opt_esec_dissect",
+    "ip_opt_qs_dissect",
+    "ip_opt_sdb_dissect",
+    "ip_opt_unk_dissect",
+    "ip_opt_dissect",
     "ip_dissect",
+    "register_dissector_ip",
+    "create_dissector_entry",
 ]
 
 

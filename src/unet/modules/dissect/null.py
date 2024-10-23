@@ -7,7 +7,13 @@ from unet.modules.dissect import (FieldFormatter, Layer, PacketInfo,
                                   PacketOptions)
 from unet.modules.dissect.dl import DLT_NULL
 
-__all__ = ["NULL_HDRLEN", "null_dissect"]
+__all__ = [
+    "NULL_HDRLEN",
+    "NullType",
+    "null_dissect",
+    "register_dissector_null",
+    "create_dissector_entry",
+]
 
 
 NULL_HDRLEN: Final = 4

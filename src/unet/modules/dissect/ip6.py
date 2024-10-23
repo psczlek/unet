@@ -15,7 +15,20 @@ from unet.modules.dissect.ip import (IP_PROTO_MAP, IPDS_DSCP_MAP, IPDS_ECN_MAP,
 from unet.modules.dissect.platform import DARWIN, FREEBSD, NETBSD, OPENBSD
 from unet.printing import Assets
 
-__all__ = ["IP6_HDRLEN", "IPv6", "ip6_dissect"]
+__all__ = [
+    "IP6_HDRLEN",
+    "IPv6",
+    "IPv6ExtHeader",
+    "IP6_EXT_HDR_MAP",
+    "IPv6Opt",
+    "IP6_OPT_MAP",
+    "ip6_ext_hdr_hop_opts_dissect",
+    "ip6_ext_hdr_route_dissect",
+    "ip6_ext_hdr_fragment_dissect",
+    "ip6_ext_hdr_dest_opts_dissect",
+    "ip6_dissect",
+    "register_dissector_ip6",
+]
 
 
 IP6_HDRLEN: Final = 40

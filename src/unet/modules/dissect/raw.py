@@ -4,7 +4,7 @@ from unet.modules.dissect import PacketInfo, PacketOptions
 from unet.modules.dissect.dl import DLT_RAW
 from unet.modules.dissect.ip46 import ip46_dissect
 
-__all__ = ["ip46_dissect"]
+__all__ = ["raw_dissect", "register_dissector_raw"]
 
 
 def raw_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
