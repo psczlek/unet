@@ -158,7 +158,7 @@ def tcp_opt_eol_or_nop_dissect(
     f = FieldFormatter(TCP_OPT_MAP[kind][0])
     tcp_opt_common_dissect(f, pkto, pkti, buf)
 
-    dump = f.line("length", "bytes" if len(buf) > 1 else "byte")
+    dump = f.line("kind", "length", "bytes" if len(buf) > 1 else "byte")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
@@ -184,7 +184,7 @@ def tcp_opt_mss_dissect(
     mss = struct.unpack("!H", buf[2:4])[0]
     f.add_field("mss", mss)
 
-    dump = f.line("length", "bytes" if len(buf) > 1 else "byte")
+    dump = f.line("mss")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
@@ -211,7 +211,7 @@ def tcp_opt_ws_dissect(
     f.add_field("shift count", ws, alt_value=f"(window size << {ws})",
                 alt_sep=" ")
 
-    dump = f.line("length", "bytes" if len(buf) > 1 else "byte")
+    dump = f.line("shift count")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
@@ -234,7 +234,7 @@ def tcp_opt_sack_perm_dissect(
     f = FieldFormatter(TCP_OPT_MAP[kind][0])
     tcp_opt_common_dissect(f, pkto, pkti, buf)
 
-    dump = f.line("length", "bytes")
+    dump = f.line("kind", "length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
@@ -268,7 +268,7 @@ def tcp_opt_sack_dissect(
         data_field.add_field("left edge", left, unit="(raw)")
         data_field.add_field("right edge", right, unit="(raw)")
 
-    dump = f.line("length", "bytes")
+    dump = f.line("kind", "length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
@@ -297,7 +297,7 @@ def tcp_opt_ts_dissect(
     ts_ecr = struct.unpack("!I", buf[6:10])[0]
     f.add_field("timestamp echo reply", ts_ecr)
 
-    dump = f.line("length", "bytes")
+    dump = f.line(val="timestamp value", ecr="timestamp echo reply")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
@@ -316,7 +316,7 @@ def tcp_opt_unk_dissect(
     f.add_field("kind", kind, alt_value="unknown")
     f.add_field("length", length, unit="bytes" if len(buf) > 1 else "byte")
 
-    dump = f.line("length", "bytes" if len(buf) > 1 else "byte")
+    dump = f.line("kind", "length", "bytes" if len(buf) > 1 else "byte")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
 
