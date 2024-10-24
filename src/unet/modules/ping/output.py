@@ -19,6 +19,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "verbose": OptionFlag(
+                short="-V",
                 long="--verbose",
                 help="verbose output",
                 action="store_true",
@@ -26,6 +27,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "timestamp": OptionFlag(
+                short="-T",
                 long="--timestamp",
                 help="include timestamp in the packet dump",
                 action="store_true",
@@ -33,6 +35,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "num": OptionFlag(
+                short="-N",
                 long="--num",
                 help="include packet number at the beginning of the dump line",
                 action="store_true",
@@ -40,6 +43,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "hexdump": OptionFlag(
+                short="-x",
                 long="--hexdump",
                 help="dump packet int hex",
                 action="store_true",
@@ -47,6 +51,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "dumpchunk": OptionFlag(
+                short="-u",
                 long="--dump-chunk",
                 help="dump each packet chunk in hex separately",
                 action="store_true",
@@ -54,6 +59,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "no_mac_resolve": OptionFlag(
+                short="-A",
                 long="--no-mac-resolve",
                 help="do not try to resolve mac addresses",
                 action="store_true",
@@ -61,6 +67,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "no_ip_resolve": OptionFlag(
+                short="-a",
                 long="--no-ip-resolve",
                 help="do not try to resolve ip addresses",
                 action="store_true",
@@ -68,6 +75,7 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "no_port_resolve": OptionFlag(
+                short="-k",
                 long="--no-port-resolve",
                 help="do not try to resolve port numbers to service names",
                 action="store_true",
@@ -75,13 +83,15 @@ OUTPUT_FLAGS: Final = {
                 default=False,
             ),
             "sum_ok": OptionFlag(
-                long="--sum-ok",
+                short="-S",
+                long="--validate-sum",
                 help="validate checksums if possible",
                 action="store_true",
                 required=False,
                 default=False,
             ),
             "l2": OptionFlag(
+                short="-e",
                 long="--l2",
                 help="dump link level headers",
                 action="store_true",
