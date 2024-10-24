@@ -2249,7 +2249,7 @@ __all__ = ["{name}_dissect"]
 
 def {name}_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     protocol = "{name.upper()}"
-    f = FieldFormatter(protocol, brackets="[]")
+    f = FieldFormatter(protocol)
 
     dump = f.line()
     if pkto.verbose:
@@ -2274,8 +2274,7 @@ def register_dissector_{name}(
 # If this protocol will require new entry in the dissect table, create it here.
 # Otherwise, remove this function
 def create_dissector_entry() -> str:
-    # Return the entry identifier e.g. 'ip.proto' and the initial value for the
-    # entry
+    # Return the entry identifier e.g. 'ip.proto'
     return ""
 """
     write_path = Path(f"{path}/{name}.py").expanduser().resolve()
