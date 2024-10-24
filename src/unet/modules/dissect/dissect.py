@@ -2723,11 +2723,38 @@ class Dissect(LiveCapture, DeadCapture):
                 ]
         print("\n".join(stats_dump))
 
-    def list_dissect_table_entries(self) -> None:
-        pass
+    def list_dissect_table_entries(self) -> list[str]:
+        lines = []
+        for entry in self._dissect_table:
+            sep = Color.color("+", self._colors.value)
+            entry = Color.color(entry, self._colors.name)
+            lines.append(f"{sep} {entry}")
+        return lines
 
-    def list_dissectors(self) -> None:
-        pass
+    def list_dissectors(self) -> list[str]:
+        lines = []
+
+        for table in self._dissect_table.values():
+            for _, dissector_info in table.items():
+                sep = Color.color("+", self._colors.value)
+                abbrev = Color.color(dissector_info.a_name, self._colors.name)
+                full_name = Color.color(dissector_info.l_name, self._colors.alt_name)
+                dissector = Color.color(dissector_info.dissect_routine_name, self._colors.alt_value)
+                entry = Color.color(dissector_info.entry, self._colors.note_contents)
+                id = Color.color(str(dissector_info.id), self._colors.unit)
+                id_hex = Color.color(as_hex(dissector_info.id, 4), self._colors.unit)
+                path = Color.color(dissector_info.dissect_routine.__code__.co_filename, self._colors.note_prefix)
+
+                line = (
+                    f"{sep} {abbrev} ({full_name})\n"
+                    f"    routine: {dissector}\n"
+                    f"    entry: {entry}\n"
+                    f"    id: {id} ({id_hex})\n"
+                    f"    path: {path}\n"
+                )
+                lines.append(line)
+
+        return lines
 
 
 FLAGS: Final[dict[str, PositionalFlag | OptionFlag | Group]] = {
@@ -2908,6 +2935,20 @@ FLAGS: Final[dict[str, PositionalFlag | OptionFlag | Group]] = {
         default=None,
         metavar="<path>",
     ),
+    "show_dissect_table_entries": OptionFlag(
+        long="--show-dissect-table-entries",
+        help="show dissect table entries and exit",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
+    "show_dissectors": OptionFlag(
+        long="--show-dissectors",
+        help="show available dissectors and exit",
+        action="store_true",
+        required=False,
+        default=False,
+    ),
     "output options": Group(
         arguments={
             "vflag": OptionFlag(
@@ -3052,6 +3093,20 @@ def main(args: list[str]) -> None:
             output = f"{num_str}. {interface}"
             print(output)
 
+        return
+
+    # Show dissect table entries and exit
+    if flags.show_dissect_table_entries:
+        dissect = Dissect("live", "any", dissectors_path=flags.Dflag)
+        out = dissect.list_dissect_table_entries()
+        print("\n".join(out))
+        return
+
+    # Show available dissectors and exit
+    if flags.show_dissectors:
+        dissect = Dissect("live", "any", dissectors_path=flags.Dflag)
+        out = dissect.list_dissectors()
+        print("\n".join(out))
         return
 
     # Create new dissector template
