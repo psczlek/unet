@@ -166,7 +166,7 @@ class Traceroute:
         if not self.ip6:
             fexpr = "ip proto 1 and (icmp[0]=0 or icmp[0]=3 or icmp[0]=11)"
         else:
-            fexpr = "ip proto 58 and (icmp6[0]=1 or icmp6[0]=3 or icmp6[0]=129)"
+            fexpr = "ip6 proto 58 and (icmp6[0]=1 or icmp6[0]=3 or icmp6[0]=129)"
 
         for hop in range(first_hop, (max_hops + 1)):
             done = False
@@ -226,7 +226,7 @@ class Traceroute:
         if not self.ip6:
             fexpr = "ip proto 1 and (icmp[0]=3 or icmp[0]=11)"
         else:
-            fexpr = "ip proto 58 and (icmp6[0]=1 or icmp6[0]=3)"
+            fexpr = "ip6 proto 58 and (icmp6[0]=1 or icmp6[0]=3)"
 
         for hop in range(first_hop, (max_hops + 1)):
             done = False
@@ -288,7 +288,7 @@ class Traceroute:
             fexpr = ("(ip proto 1 and (icmp[0]=3 or icmp[0]=4 or icmp[0]=5 or "
                      "icmp[0]=11 or icmp[0]=12)) or (tcp and (tcp[13] & 0x16 > 0x10))")
         else:
-            fexpr = ("(ip proto 58 and (icmp6[0]=1 or icmp6[0]=2 or icmp6[0]=3 or "
+            fexpr = ("(ip6 proto 58 and (icmp6[0]=1 or icmp6[0]=2 or icmp6[0]=3 or "
                      "icmp6[0]=4)) or (tcp and (tcp[13] & 0x16 > 0x10))")
 
         for hop in range(first_hop, (max_hops + 1)):
