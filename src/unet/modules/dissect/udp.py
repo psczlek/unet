@@ -135,7 +135,13 @@ def udp_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     pkti.dissected += UDP_HDRLEN
 
     if pkti.remaining > 0:
-        pkti.next_proto = dport
+        if dport in range(0, 1024):
+            pkti.next_proto = dport
+        elif sport in range(0, 1024):
+            pkti.next_proto = sport
+        else:
+            pkti.next_proto = dport
+
         pkti.next_proto_lookup_entry = "udp.data"
     else:
         pkti.next_proto = -1
@@ -181,7 +187,6 @@ def register_dissector_udp(
         ], None]
 ) -> None:
     register("udp", "User Datagram Protocol", "ip.proto", 17, udp_dissect)
-    register("udp-lite", "User Datagram Protocol Lite", "ip.proto", 136, udp_dissect)
 
 
 def create_dissector_entry() -> str:

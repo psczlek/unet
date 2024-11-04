@@ -572,7 +572,13 @@ def tcp_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     pkti.dissected += hlen
 
     if pkti.remaining > 0:
-        pkti.next_proto = dport
+        if dport in range(0, 1024):
+            pkti.next_proto = dport
+        elif sport in range(0, 1024):
+            pkti.next_proto = sport
+        else:
+            pkti.next_proto = dport
+
         pkti.next_proto_lookup_entry = "tcp.data"
     else:
         pkti.next_proto = -1
