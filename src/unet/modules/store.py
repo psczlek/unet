@@ -317,6 +317,7 @@ class Store:
                     repo_path = self._path / repo_name
                     if repo_path.exists() and repo_path.is_dir():
                         repo = Repo(repo_path)
+                        repo.git.fetch()
                         commits_behind = list(repo.iter_commits("master..origin/master"))
 
                         if commits_behind:
