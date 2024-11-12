@@ -58,8 +58,6 @@ __all__ = [
     "DLT_VSOCK",
     "DLT_ETHERNET_MPACKET",
     "DLT_LINUX_SLL2",
-    "DLT_TO_IP",
-    "DLT_TO_IPV6",
     "create_dissector_entry",
 ]
 
@@ -139,12 +137,6 @@ DLT_BLUETOOTH_LE_LL_WITH_PHDR = 256
 DLT_VSOCK = 271
 DLT_ETHERNET_MPACKET = 274
 DLT_LINUX_SLL2 = 276
-
-
-DLT_TO_IP = {}
-
-
-DLT_TO_IPV6 = {}
 
 
 def create_dissector_entry() -> str:
