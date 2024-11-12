@@ -1,7 +1,12 @@
 import struct
 from socket import AF_INET6, inet_aton, inet_pton, ntohs
 
-__all__ = ["in_chksum", "in_chksum_shouldbe", "ip_proto_chksum"]
+__all__ = [
+    "in_chksum",
+    "in_chksum_shouldbe",
+    "ip_proto_chksum",
+    "ip6_proto_chksum",
+]
 
 
 def in_chksum(buf: bytes) -> int:
