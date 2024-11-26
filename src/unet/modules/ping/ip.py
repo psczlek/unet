@@ -35,22 +35,25 @@ __all__ = [
 
 
 def get_random_ipv4() -> str:
-    # Class A, public range: 1.0.0.0 - 127.0.0.0
+    # Class A, public range: 1.0.0.0 - 126.255.255.255
     def random_class_a() -> str:
-        first_octet = secrets.randbelow(128)
-        return (f"{first_octet}.{secrets.randbelow(256)}.{secrets.randbelow(256)}"
+        return (f"{secrets.randbelow(127)}"
+                f".{secrets.randbelow(256)}"
+                f".{secrets.randbelow(256)}"
                 f".{secrets.randbelow(256)}")
 
-    # Class B, public range: 128.0.0.0 - 191.255.0.0
+    # Class B, public range: 128.0.0.0 - 191.255.255.255
     def random_class_b() -> str:
-        first_octet = secrets.randbelow(192)
-        return (f"{first_octet}.{secrets.randbelow(256)}.{secrets.randbelow(256)}"
+        return (f"{secrets.randbelow(192)}"
+                f".{secrets.randbelow(256)}"
+                f".{secrets.randbelow(256)}"
                 f".{secrets.randbelow(256)}")
 
-    # Class c, public range: 192.0.0.0 - 223.255.255.0
+    # Class C, public range: 192.0.0.0 - 223.255.255.255
     def random_class_c() -> str:
-        first_octet = secrets.randbelow(224)
-        return (f"{first_octet}.{secrets.randbelow(256)}.{secrets.randbelow(256)}"
+        return (f"{secrets.randbelow(224)}"
+                f".{secrets.randbelow(256)}"
+                f".{secrets.randbelow(256)}"
                 f".{secrets.randbelow(256)}")
 
     class_a = random_class_a()
