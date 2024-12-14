@@ -18,6 +18,10 @@ class _PathSpec:
 
 def configure(dest_dir: str | None = None) -> None:
     if dest_dir is None:
+        # Create the .config directory if it doesn't exist
+        if not Path("~/.config").expanduser().resolve().exists():
+            Path("~/.config").expanduser().resolve().mkdir(0o777, exist_ok=True)
+
         dest_dir = "~/.config/unet"
 
     # Create the destination directory is it doesn't exist
