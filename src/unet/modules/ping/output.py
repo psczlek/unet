@@ -5,8 +5,6 @@ from unet.flag import Group, OptionFlag
 __all__ = ["OUTPUT_FLAGS"]
 
 
-# This is the same as the dissect module, but we use 'long' only to save characters
-# for the main program to consume.
 OUTPUT_FLAGS: Final = {
     "output": Group(
         description="packet printing options",
