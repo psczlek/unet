@@ -2244,7 +2244,7 @@ from typing import Any, Callable
 
 from unet.modules.dissect import FieldFormatter, Layer, PacketInfo, PacketOptions
 
-__all__ = ["{name}_dissect"]
+__all__ = ["{name}_dissect", "register_dissector_{name}"]
 
 
 def {name}_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
@@ -2267,14 +2267,18 @@ def register_dissector_{name}(
                 Callable[[PacketOptions, PacketInfo, bytes], str]
             ], None],
 ) -> None:
-    # Add the dissect routine to the disscet table here
+    # Add the dissect routine to the disscet table here, e.g.
+    #   * register('ip', 'Internet Protocol', 'eth.type', 0x0800, ip_dissect)
+    #   * register('tcp', 'Transmission Control Protocol', 'ip.proto', 6, tcp_dissect)
     register('name', 'full name', 'dissect table entry', 0, {name}_dissect)
 
 
 # If this protocol will require new entry in the dissect table, create it here.
 # Otherwise, remove this function
 def create_dissector_entry() -> str:
-    # Return the entry identifier e.g. 'ip.proto'
+    # Return the entry identifier e.g.
+    #   * 'ip.proto'
+    #   * 'tcp.port'
     return ""
 """
     write_path = Path(f"{path}/{name}.py").expanduser().resolve()
