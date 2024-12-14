@@ -90,7 +90,7 @@ TCP_FLAGS: Final = {
             ),
             "tcp_opt": OptionFlag(
                 long="--tcp-opt",
-                help="set TCP options: [nop, eol, mss, ws, ts, sackp, sack, fo]",
+                help="set TCP options: [nop, eol, mss, ws, ts, sackp, sack]",
                 type=lambda flag: flag.strip().split(","),
                 default=None,
                 required=False,
@@ -142,7 +142,7 @@ TCP_FLAGS: Final = {
                 type=lambda flag: [int(e) for e in flag.strip().split(",")],
                 default=[rand(32) for _ in range(2)],
                 required=False,
-                metavar="<r1,r2,...>",
+                metavar="<l1,l2,...>",
             ),
         }
     )
