@@ -384,6 +384,17 @@ type PingOptions = Namespace
 
 
 @dataclass
+class StartupInfo:
+    targets: list[str]
+    interface: str
+    mtu: int
+    count: int
+    method: str
+    delay: int
+    payload: int
+
+
+@dataclass
 class Statistics:
     targets: list[str] | None = None
     sent: int = 0
@@ -471,7 +482,7 @@ def list_methods() -> dict[str, tuple[str, Any]]:
     return methods
 
 
-def startup_info(opt: PingOptions) -> str:
+def startup_info(si: StartupInfo, opt: PingOptions) -> str:
     from unet.modules.dissect import FieldFormatterColor
 
     lines = []
@@ -491,20 +502,20 @@ def startup_info(opt: PingOptions) -> str:
 
     # Prepare content information
     targets = ", ".join([
-        f"{socket.getaddrinfo(addr, None, socket.AF_INET if not opt.ip6 else socket.AF_INET6)[0][4][0]} ({addr})"
-        for addr in opt.ip_dst
+        f"{addr} ({socket.getaddrinfo(addr, None, socket.AF_INET if not opt.ip6 else socket.AF_INET6)[0][4][0]})"
+        for addr in si.targets
     ])
 
-    interface = f"{opt.interface} ({if_addr(opt.interface, 'inet6' if opt.ip6 else 'inet')})"
-    payload_size = len(opt.payload) if opt.payload else 0
+    interface = f"{si.interface} ({if_addr(si.interface, 'inet6' if opt.ip6 else 'inet')})"
+    payload_size = si.payload
 
     contents = {
         "targets": targets,
         "interface": interface,
-        "mtu": str(opt.mtu),
-        "count": str(opt.count),
-        "method": opt.method,
-        "delay": f"{opt.delay} s",
+        "mtu": str(si.mtu),
+        "count": str(si.count),
+        "method": si.method,
+        "delay": f"{si.delay} s",
         "payload": f"{payload_size} byte(s)",
     }
 
@@ -546,7 +557,7 @@ def summary(stat: Statistics, opt: PingOptions) -> str:
 
     # Prepare summary contents
     targets = ", ".join([
-        f"{socket.getaddrinfo(addr, None, socket.AF_INET if not opt.ip6 else socket.AF_INET6)[0][4][0]} ({addr})"
+        f"{addr} ({socket.getaddrinfo(addr, None, socket.AF_INET if not opt.ip6 else socket.AF_INET6)[0][4][0]})"
         for addr in stat.targets
     ])
 
@@ -562,14 +573,14 @@ def summary(stat: Statistics, opt: PingOptions) -> str:
     elif stat.recv == 0:
         loss_rate = 100
     else:
-        if stat.sent > opt.count:
+        if stat.sent > opt.count and not len(stat.targets) > 1:
             contents["transmitted by kernel"] = str((stat.sent - opt.count))
             stat.sent = stat.sent - opt.count
             contents["transmitted"] = str(stat.sent)
         loss_rate = 100 * (stat.sent - stat.recv) / stat.sent
 
     # Packet loss information
-    if not "transmitted by kernel" in contents:
+    if "transmitted by kernel" not in contents:
         contents["lost"] = "-" if stat.sent == -1 and stat.recv == -1 else f"{int(stat.lost)} ({loss_rate:.2f} %)"
     else:
         contents["lost"] = "-" if not loss_rate else f"{int(stat.lost)} ({loss_rate:.2f} %)"
@@ -769,6 +780,7 @@ def main(args: list[str]) -> None:
     elif flags.target is not None and flags.ip_dst is None:
         flags.ip_dst = flags.target
 
+    unresolved_targets = flags.ip_dst
     resolved_targets = []
     if not flags.no_target_resolve:
         for target in flags.ip_dst:
@@ -839,7 +851,16 @@ def main(args: list[str]) -> None:
             flags.payload += bytes(secrets.randbits(8) for _ in range(flags.payload_rand))
 
     # Print the startup info
-    prelude = startup_info(flags)
+    si = StartupInfo(
+        unresolved_targets,
+        flags.interface,
+        flags.mtu,
+        flags.count,
+        flags.method,
+        flags.delay,
+        len(flags.payload) if flags.payload else 0,
+    )
+    prelude = startup_info(si, flags)
     print(prelude, end="\n" * 2)
 
     # Start the send loop
@@ -969,7 +990,7 @@ def main(args: list[str]) -> None:
         else:
             flags.stat.rtt_max = flags.stat.rtt_min = flags.stat.rtt_avg = 0.0
 
-        stat.targets = target_list
+        stat.targets = unresolved_targets
 
         epilog = summary(stat, flags)
         print("\n" + epilog)
