@@ -20,7 +20,7 @@ from unet.flag import FlagParser, Group, OptionFlag, PositionalFlag
 from unet.printing import eprint
 
 
-def error(message: str, code: int = 1) -> None:
+def _error(message: str, code: int = 1) -> None:
     precedence = (f"{Color.color('error', 'red bold')}: "
                   f"{Color.color('traceroute', 'red bold')}")
     eprint(message, exit_code=code, precedence=precedence)
@@ -35,8 +35,8 @@ try:
     from scapy.packet import Packet, Raw
     from scapy.sendrecv import sr1
 except ModuleNotFoundError:
-    error("scapy is not installed. Install scapy and try again: "
-          "'python3 -m pip install scapy'")
+    _error("scapy is not installed. Install scapy and try again: "
+           "'python3 -m pip install scapy'")
 
 __all__ = ["main", "TracerouteResultsPerHop", "Traceroute"]
 
@@ -466,10 +466,6 @@ def _startup_info(flags: Namespace) -> str:
     return "\n  ".join(prelude_parts)
 
 
-def _summary(res: list[TracerouteResultsPerHop]) -> str:
-    return ""
-
-
 TRACEROUTE_FLAGS: Final = {
     "host": PositionalFlag(
         help="destination address or hostname for which to trace the path packets "
@@ -580,14 +576,6 @@ TRACEROUTE_FLAGS: Final = {
         default=5.0,
         metavar="<n>",
     ),
-    "summary": OptionFlag(
-        short="-S",
-        long="--summary",
-        help="",
-        action="store_true",
-        required=False,
-        default=False,
-    ),
     "examples": Group(
         arguments={},
         description="\n".join([
@@ -626,7 +614,7 @@ def main(args: list[str]) -> None:
 
     # Run
     try:
-        # We use signals directly  because suddenly scapy just decided to don't
+        # We use signals directly  because suddenly scapy just decided not to
         # react to keyboard interrupts
         signal.signal(signal.SIGINT, _signal_handler)
 
@@ -684,11 +672,5 @@ def main(args: list[str]) -> None:
                  flags.wait_threshold, flags.ds, flags.df, flags.saddr,
                  flags.sport, flags.dport, flags.rand_sport, flags.static_dport,
                  callback=partial(_pretty_print_results))
-
-        # Print summary if said so
-        if flags.summary:
-            res = tr.results
-            summary = _summary(res)
-            print("\n" + summary)
     except Exception as err:
-        error(str(err))
+        _error(str(err))
