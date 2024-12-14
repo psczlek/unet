@@ -386,7 +386,7 @@ def tcp_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
 
     tcp = TCP(buf[:TCP_HDRLEN])
 
-    # Destination port
+    # Source port
     sport = tcp.sport
     if pkto.numeric_port:
         sport_field = f.add_field("sport", sport)
