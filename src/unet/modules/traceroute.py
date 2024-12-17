@@ -233,7 +233,7 @@ class Traceroute:
 
             for p in range(0, count):
                 res = TracerouteResultsPerHop(
-                    socket.AF_INET if not self.ip6 else socket.AF_INET6, "icmp",
+                    socket.AF_INET if not self.ip6 else socket.AF_INET6, "udp",
                     hop, hop, count=count)
                 pkt = self._build_packet(secrets.randbelow(0xffff + p), p, ds,
                                          hop, df, src, sport, dport, rand_sport,
@@ -296,7 +296,7 @@ class Traceroute:
 
             for p in range(0, count):
                 res = TracerouteResultsPerHop(
-                    socket.AF_INET if not self.ip6 else socket.AF_INET6, "icmp",
+                    socket.AF_INET if not self.ip6 else socket.AF_INET6, "tcp",
                     hop, hop, count=count)
                 pkt = self._build_packet(secrets.randbelow(0xffff + p), p, ds,
                                          hop, df, src, sport, dport, rand_sport,
