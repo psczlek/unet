@@ -11,9 +11,9 @@ from unet.printing import Assets, eprint
 __all__ = ["main"]
 
 
-_NAME: Final = "unet (dev)"
+_NAME: Final = "unet"
 _VERSION: Final = "1.0.0"
-_RELEASE_DATE: Final = "2024-10-08"
+_RELEASE_DATE: Final = "2024-12-19"
 
 
 def _error(message: str) -> None:
