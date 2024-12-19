@@ -119,8 +119,3 @@ github repository and add *name* and *link* to our [list of public modules](http
 This project is released under the BSD 3-Clause license.
 See [LICENSE](https://github.com/psczlek/unet/blob/dev/LICENSE) for
 more information
-
-## Bugs
-
-I know that the dev version might contain weird bugs, inaccuraties or missing
-implementations.
