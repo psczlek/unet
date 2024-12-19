@@ -1,4 +1,4 @@
-# UNET (The Unified Network Toolkit) (dev)
+# UNET (The Unified Network Toolkit)
 
 ## Platforms
 
@@ -8,6 +8,10 @@ unet has been ran on the following platforms:
 - kali linux
 - macOS 14
 - macOS 15
+
+And is regularly tested on:
+- Linux (Ubuntu)
+- macOS
 
 ## Installation
 
@@ -107,7 +111,7 @@ history file.
 
 ### Public modules 
 
-If you want to add some modules you think will be usefull, add them to public
+If you want to add some modules you think will be useful, add them to public
 github repository and add *name* and *link* to our [list of public modules](https://github.com/theosfa/unet-ext-modules)
 
 ## License
