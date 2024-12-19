@@ -34,7 +34,6 @@ def configure(dest_dir: str | None = None) -> None:
         _PathSpec(f"{dest_dir}/config.json", "file"),
         _PathSpec(f"{dest_dir}/modules/", "dir"),
         _PathSpec(f"{dest_dir}/modules/fetched/", "dir"),
-        _PathSpec(f"{dest_dir}/modules/themes/", "dir"),
     ]
 
     # Default config data
