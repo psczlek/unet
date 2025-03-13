@@ -23,7 +23,6 @@ class ConfReader:
         if not self._file.exists():
             eprint(f"supplied config path does not exist: {self._file}",
                    precedence="error: confreader:")
-
         self._data: dict[str, Any] = {}
 
     def read(self) -> dict[str, Any]:
@@ -50,11 +49,9 @@ class ConfReader:
 
         def json_print(data: dict[str, Any], indent: int = 0) -> None:
             indent_str = " " * indent
-
             if isinstance(data, dict):
                 if len(data) == 0:
                     print(f"{indent_str}{{}}")
-
                 for key, value in data.items():
                     key_colored = Color.color(key, "cyan")
                     if isinstance(value, (dict, list)):
@@ -66,7 +63,6 @@ class ConfReader:
             elif isinstance(data, list):
                 if len(data) == 0:
                     print(f"{indent_str}* none")
-
                 for item in data:
                     if isinstance(item, (dict, list)):
                         print(f"{indent_str}-")

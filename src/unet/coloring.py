@@ -54,16 +54,13 @@ def supports_true_color() -> bool:
     """
     if not _on:
         return False
-
     true_color_env_vars = ["COLORTERM", "ITERM_SESSION_ID", "WT_SESSION"]
     true_color_terms = ["truecolor", "24bit"]
     is_a_tty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
-
     for evar in true_color_env_vars:
         if evar in os.environ:
             if os.environ[evar] in true_color_terms or evar == "COLORTERM":
                 return True and is_a_tty
-
     return False
 
 
@@ -99,7 +96,6 @@ def _get_default_color(k: str) -> str | RGB | Hex | None:
         "gray": ("\x1b[0;38;5;240", RGB(120, 120, 120)),
         "light_gray": ("\x1b[0;37", RGB(160, 160, 160)),
     }
-
     try:
         if supports_true_color():
             color = colors[k][1]
@@ -279,13 +275,10 @@ class Color:
         """
         if not supports_colors() or not len(color_or_colors):
             return msg
-
         colors = Color.ANSI_COLORS
         text = [colors[color] for color in color_or_colors.split() if color in colors]
-
         text.append(str(msg))
         text.append(colors["normal"])
-
         return "".join(text)
 
     @staticmethod
@@ -311,14 +304,11 @@ class Color:
         """
         if not supports_true_color():
             return msg
-
         r, g, b = color.r, color.g, color.b
         bold_prefix = "1;" if color.bold else ""
-
         if background is not None:
             bg_r, bg_g, bg_b = background.r, background.g, background.b
             return f"\x1b[{bold_prefix}38;2;{r};{g};{b};48;2;{bg_r};{bg_g};{bg_b}m{msg}\x1b[0m"
-
         return f"\x1b[{bold_prefix}38;2;{r};{g};{b}m{msg}\x1b[0m"
 
     @staticmethod
@@ -343,22 +333,17 @@ class Color:
             Colorified `msg`.
         """
         value = color.value
-
         if "#" in value:
             value = value.lstrip("#")
-
         if (len(value) > 6
                 or len(value) < 6
                 or any(char not in string.hexdigits for char in value)
                 or not supports_true_color()):
             return msg
-
         r, g, b = (int(value[i:i + 2], 16) for i in (0, 2, 4))
         bold_prefix = "1;" if color.bold else ""
-
         if background is not None:
             bg_value = background.value.lstrip("#")
             bg_r, bg_g, bg_b = (int(bg_value[i:i + 2], 16) for i in (0, 2, 4))
             return f"\x1b[{bold_prefix}38;2;{r};{g};{b};48;2;{bg_r};{bg_g};{bg_b}m{msg}\x1b[0m"
-
         return f"\x1b[{bold_prefix}38;2;{r};{g};{b}m{msg}\x1b[0m"

@@ -64,7 +64,6 @@ def _get_default_color(k: str) -> str | RGB | Hex | None:
         "metavar": (None, RGB(253, 157, 99)),
         "help": (None, None),
     }
-
     try:
         if supports_true_color():
             color = colors[k][1]
@@ -108,7 +107,6 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                 self._color = color
             else:
                 self._color = FlagHelpFormatterColor()
-
         super().__init__(prog, indent_increment, max_help_position, width)
 
     # the functions below are just copy and paste lines from the argparse
@@ -125,35 +123,29 @@ class FlagHelpFormatter(argparse.HelpFormatter):
     ) -> str:
         if prefix is None:
             prefix = "usage: "
-
         # if usage is specified, use that
         if usage is not None:
             usage = usage % dict(prog=self._prog)
-
         # if no optionals or positionals are available, usage is just prog
         elif usage is None and not actions:
             usage = "%(prog)s" % dict(prog=self._prog)
-
         # if optionals and positionals are available, calculate usage
         elif usage is None:
             prog = "%(prog)s" % dict(prog=self._prog)
             # split optionals from positionals
             optionals = []
             positionals = []
-
             for action in actions:
                 if action.option_strings:
                     optionals.append(action)
                 else:
                     positionals.append(action)
-
             # build full usage string
             format = self._format_actions_usage
             action_usage = format(optionals + positionals, groups)
             usage = " ".join([s for s in [prog, action_usage] if s])
             # wrap the usage parts if it's too long
             text_width = self._width - self._current_indent
-
             if len(prefix) + len(usage) > text_width:
                 # break usage into wrappable parts
                 part_regexp = (
@@ -161,12 +153,10 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                     r"\[.*?\]+(?=\s|$)|"
                     r"\S+"
                 )
-
                 opt_usage = format(optionals, groups)
                 pos_usage = format(positionals, groups)
                 opt_parts = re.findall(part_regexp, opt_usage)
                 pos_parts = re.findall(part_regexp, pos_usage)
-
                 assert " ".join(opt_parts) == opt_usage
                 assert " ".join(pos_parts) == pos_usage
 
@@ -179,12 +169,10 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                     lines: list[str] = []
                     line: list[str] = []
                     indent_length = len(indent)
-
                     if prefix is not None:
                         line_len = len(prefix) - 1
                     else:
                         line_len = indent_length - 1
-
                     for part in parts:
                         if line_len + 1 + len(part) > text_width and line:
                             lines.append(indent + " ".join(line))
@@ -192,22 +180,17 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                             line_len = indent_length - 1
                         line.append(part)
                         line_len += len(part) + 1
-
                     if line:
                         lines.append(indent + " ".join(line))
-
                     if prefix is not None:
                         lines[0] = lines[0][indent_length:]
-
                     return lines
 
                 # if prog is short, follow it with optionals or positionals
                 if len(prefix) + len(prog) <= 0.75 * text_width:
                     indent = " " * (len(prefix) + len(prog) + 1)
-
                     if self._colorify:
                         prog = Color.color(prog, self._color.usage_prog)
-
                     if opt_parts:
                         lines = get_lines([prog] + opt_parts, indent, prefix)
                         lines.extend(get_lines(pos_parts, indent))
@@ -220,27 +203,21 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                     indent = " " * len(prefix)
                     parts = opt_parts + pos_parts
                     lines = get_lines(parts, indent)
-
                     if len(lines) > 1:
                         lines = []
                         lines.extend(get_lines(opt_parts, indent))
                         lines.extend(get_lines(pos_parts, indent))
-
                     if self._colorify:
                         prog = Color.color(prog, self._color.usage_prog)
-
                     lines = [prog] + lines
-
                 # join lines into usage
                 usage = "\n".join(lines)
-
         if self._colorify and prefix == "usage: ":
             prefix = "usage"
             prefix = Color.color(prefix, self._color.usage_prefix)
             prefix += ": "
         elif self._colorify and prefix != "usage:":
             prefix = Color.color(prefix, self._color.usage_prefix)
-
         return "%s%s\n\n" % (prefix, usage)
 
     @override
@@ -252,11 +229,9 @@ class FlagHelpFormatter(argparse.HelpFormatter):
         # find group indices and identify actions in groups
         group_actions = set()
         inserts = {}
-
         for group in groups:
             if not group._group_actions:
                 raise ValueError(f"empty group {group}")
-
             try:
                 start = actions.index(group._group_actions[0])
             except ValueError:
@@ -264,27 +239,20 @@ class FlagHelpFormatter(argparse.HelpFormatter):
             else:
                 group_action_count = len(group._group_actions)
                 end = start + group_action_count
-
                 if actions[start:end] == group._group_actions:
                     suppressed_actions_count = 0
-
                     for action in group._group_actions:
                         group_actions.add(action)
-
                         if action.help is argparse.SUPPRESS:
                             suppressed_actions_count += 1
-
                     exposed_actions_count = group_action_count - suppressed_actions_count
-
                     if not exposed_actions_count:
                         continue
-
                     if not group.required:
                         if start in inserts:
                             inserts[start] += " ["
                         else:
                             inserts[start] = "["
-
                         if end in inserts:
                             inserts[end] += "]"
                         else:
@@ -294,69 +262,54 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                             inserts[start] += " ("
                         else:
                             inserts[start] = "("
-
                         if end in inserts:
                             inserts[end] += ")"
                         else:
                             inserts[end] = ")"
-
                     for i in range(start + 1, end):
                         inserts[i] = "|"
-
         # collect all actions format strings
         parts: list[str | None] = []
-
         for i, action in enumerate(actions):
             # suppressed arguments are marked with None
             # remove | separators for suppressed arguments
             if action.help is argparse.SUPPRESS:
                 parts.append(None)
-
                 if inserts.get(i) == "|":
                     inserts.pop(i)
                 elif inserts.get(i + 1) == "|":
                     inserts.pop(i + 1)
-
             # produce all arg strings
             elif not action.option_strings:
                 default = self._get_default_metavar_for_positional(action)
                 part = self._format_args(action, default)
                 # if it's in a group, strip the outer []
-
                 if action in group_actions:
                     if part[0] == "[" and part[-1] == "]":
                         part = part[1:-1]
-
                 # add the action string to the list
                 parts.append(part)
-
             # produce the first way to invoke the option in brackets
             else:
                 option_string = action.option_strings[0]
-
                 # if the Optional doesn't take a value, format is:
                 #    -s or --long
                 if action.nargs == 0:
                     part = action.format_usage()
-
                 # if the Optional takes a value, format is:
                 #    -s ARGS or --long ARGS
                 else:
                     default = self._get_default_metavar_for_optional(action)
                     args_string = self._format_args(action, default)
                     part = "%s %s" % (option_string, args_string)
-
                 # make it look optional if it's not required or in a group
                 if not action.required and action not in group_actions:
                     part = "[%s]" % part
-
                 # add the action string to the list
                 parts.append(part)
-
         # insert things at the necessary indices
         for i in sorted(inserts, reverse=True):
             parts[i:i] = [inserts[i]]
-
         if self._colorify:
             args = []
             for part in parts:
@@ -385,11 +338,9 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                             metavar = Color.color(metavar, self._color.metavar)
                             arg = "[%s %s]" % (arg, metavar)
                             args.append(arg)
-
             # don't need the previous parts
             parts.clear()
             parts = args
-
         # join all the action items with spaces
         text = " ".join([item for item in parts if item is not None])
         # clean up separators for mutually exclusive groups
@@ -399,7 +350,6 @@ class FlagHelpFormatter(argparse.HelpFormatter):
         text = re.sub(r" (%s)" % close, r"\1", text)
         text = re.sub(r"%s *%s" % (open, close), r"", text)
         text = text.strip()
-
         # return the text
         return text
 
@@ -407,7 +357,6 @@ class FlagHelpFormatter(argparse.HelpFormatter):
     def start_section(self, heading: str | None) -> None:
         if self._colorify and heading is not None:
             heading = Color.color(heading, self._color.section)
-
         super().start_section(heading)
 
     @override
@@ -417,14 +366,11 @@ class FlagHelpFormatter(argparse.HelpFormatter):
             # `text = text % dict(prog=self._prog)`, was throwing a
             # ValueError. Now it should be fine
             text = text.replace("%(prog)", self._prog)
-
         text_width = max(self._width - self._current_indent, 11)
         indent = " " * self._current_indent
         filled_text = self._fill_text(text, text_width, indent)
-
         if self._colorify:
             filled_text = Color.color(filled_text, self._color.description)
-
         return filled_text + "\n\n"
 
     @override
@@ -434,7 +380,6 @@ class FlagHelpFormatter(argparse.HelpFormatter):
         help_width = max(self._width - help_position, 11)
         action_width = help_position - self._current_indent - 2
         action_header = self._format_action_invocation(action)
-
         # no help; start on same line and add a final newline
         if not action.help:
             action_header = f"{'':>{self._current_indent}}{action_header}"
@@ -446,25 +391,20 @@ class FlagHelpFormatter(argparse.HelpFormatter):
         else:
             action_header = f"{action_header:>{self._current_indent}}\n"
             indent_first = help_position
-
         if self._colorify:
             if action_header[:2] == "  ":
                 action_header_parts = action_header.split(" ")[2:]
             else:
                 action_header_parts = action_header.split(" ")
-
             indent = 0
             elements = 0
-
             for element in action_header_parts:
                 if not len(element):
                     indent += 1
                 else:
                     elements += 1
-
             action_header_parts = action_header_parts[0:elements]
             result = []
-
             for element in action_header_parts:
                 # short flag
                 if element[0] == "-" and element[1] != "-":
@@ -499,28 +439,22 @@ class FlagHelpFormatter(argparse.HelpFormatter):
                     result.append(element)
 
             action_header = "%*s%s%*s" % (2, "", " ".join(result), indent, "")
-
         # collect the pieces of the action help
         parts = [action_header]
-
         # if there was help for the action, add lines of help text
         if action.help and action.help.strip():
             help_text = self._expand_help(action)
-
             if help_text:
                 help_lines = self._split_lines(help_text, help_width)
                 parts.append(f"{'':>{indent_first}}{help_lines[0]}\n")
-
                 for line in help_lines[1:]:
                     parts.append(f"{'':>{help_position}}{line}\n")
         # or add a newline if the description doesn't end with one
         elif not action_header.endswith("\n"):
             parts.append("\n")
-
         # if there are any sub-actions, add their help as well
         for subaction in self._iter_indented_subactions(action):
             parts.append(self._format_action(subaction))
-
         # return a single string
         return "".join([part for part in parts
                         if part and part is not argparse.SUPPRESS])
@@ -531,11 +465,9 @@ class FlagHelpFormatter(argparse.HelpFormatter):
         if not action.option_strings:
             default = self._get_default_metavar_for_positional(action)
             metavar, = self._metavar_formatter(action, default)(1)
-
             return metavar
         else:
             parts: list[str] = []
-
             # optional with no arguments
             if action.nargs == 0:
                 option_strings = action.option_strings
@@ -573,10 +505,8 @@ class FlagHelpFormatter(argparse.HelpFormatter):
         elif action.choices is not None:
             choices_iter = iter(action.choices)
             first = last = next(choices_iter)
-
             for choice in choices_iter:
                 last = choice
-
             result = f"<{str(first)}..{str(last)}>"
         else:
             result = default_metavar
@@ -655,7 +585,6 @@ class FlagParser(argparse.ArgumentParser):
                     elif len(flag.arguments) == 0 and flag.description is not None:
                         self.add_argument_group(dest, flag.description)
                         continue
-
                     group = self.add_argument_group(dest, flag.description)
                     self.add_arguments(
                         flag.arguments,
@@ -669,15 +598,11 @@ class FlagParser(argparse.ArgumentParser):
                         # that case
                         if flag.short is None and flag.long is None:
                             raise ValueError("neither short nor long flag was supplied")
-
                         flags = []
-
                         if flag.short is not None:
                             flags.append(flag.short)
-
                         if flag.long is not None:
                             flags.append(flag.long)
-
                         kwargs = {
                             "action": flag.action,
                             "nargs": flag.nargs,
@@ -691,7 +616,6 @@ class FlagParser(argparse.ArgumentParser):
                             "dest": dest,
                             "version": flag.version,
                         }
-
                         kwargs = {k: v for k, v in kwargs.items() if v is not None}
                         add(*flags, **kwargs)
             except argparse.ArgumentError as e:

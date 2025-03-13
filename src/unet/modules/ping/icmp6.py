@@ -49,7 +49,6 @@ ICMP6_FLAGS: Final = {
                 required=False,
                 metavar="<seq>",
             ),
-
             # Destination Unreachable, Time Exceeded
             "icmp6_unused": OptionFlag(
                 long="--icmp6-unused",
@@ -59,7 +58,6 @@ ICMP6_FLAGS: Final = {
                 required=False,
                 metavar="<x>",
             ),
-
             # Packet Too Big
             "icmp6_mtu": OptionFlag(
                 long="--icmp6-mtu",
@@ -69,7 +67,6 @@ ICMP6_FLAGS: Final = {
                 required=False,
                 metavar="<mtu>",
             ),
-
             # Parameter Problem
             "icmp6_ptr": OptionFlag(
                 long="--icmp6-ptr",
@@ -98,36 +95,26 @@ def icmp6_send(opt: PingOptions, data: bytes | None) -> None:
         icmp = icmp_pool[opt.icmp_type]
     except KeyError:
         icmp = ICMPv6EchoRequest()
-
     icmp.type = opt.icmp_type if opt.icmp_type is not None else 128
     icmp.code = opt.icmp_code if opt.icmp_code is not None else 0
     icmp.cksum = opt.icmp_sum if opt.icmp_sum is not None else 0
-
     if icmp.type in {1, 3}:
         icmp.unused = opt.icmp6_unused if opt.icmp6_unused is not None else 0
-
     if icmp.type == 2:
         icmp.mtu = opt.icmp6_mtu if opt.icmp6_mtu is not None else (opt.mtu - 40)
-
     if icmp.type == 4:
         icmp.ptr = opt.icmp6_ptr if opt.icmp6_ptr is not None else 0
-
     if icmp.type in {128, 129}:
         if opt.icmp6_id is None:
             opt.icmp6_id = rand(16)
-
         if opt.icmp6_seq is None:
             opt.icmp6_seq = 0
-
         icmp.id = opt.icmp6_id
         icmp.seq = opt.icmp6_seq
-
         opt.icmp6_seq += 1
-
     # Add data
     if data is not None:
         icmp = icmp / Raw(data)
-
     if opt.icmp_sum is None:
         ph = struct.pack(
             "!16s16sI3xB",
@@ -136,14 +123,11 @@ def icmp6_send(opt: PingOptions, data: bytes | None) -> None:
             len(raw(icmp)),
             58,
         )
-
         chksum = checksum(ph + raw(icmp))
         icmp.cksum = chksum
-
     # Send packet
     if opt.ip_nh is None:
         opt.ip_nh = 58
-
     icmp = raw(icmp)
     ip6_send(opt, icmp)
 

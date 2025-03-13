@@ -95,6 +95,19 @@ def get_signature(module: ModuleType, symbol_name: str) -> str | None:
 
 
 def is_package(module: ModuleType) -> bool:
+    """
+    Whether a module is a package.
+
+    Parameters
+    ----------
+    module : ModuleType
+        Handle to the module which to check if it is a package.
+
+    Returns
+    -------
+    bool
+        True is the modules is a package. Otherwise returns False.
+    """
     # `__path__` attribute is only present when a module is a package
     #
     # from docs: (https://docs.python.org/3/reference/import.html)
@@ -112,7 +125,7 @@ def load_module(source: str, module_name: str) -> ModuleType | None:
         Path to a Python file.
 
     module_name : str
-        Name to assign the loaded module.
+        Name to assign to the loaded module.
 
     Returns
     -------
@@ -122,16 +135,12 @@ def load_module(source: str, module_name: str) -> ModuleType | None:
     spec = importlib.util.spec_from_file_location(module_name, source)
     if spec is None or spec.loader is None:
         return None
-
     # Create the module from the spec
     module = importlib.util.module_from_spec(spec)
-
     # Add the module to sys.modules
     sys.modules[module_name] = module
-
     # Execute the module code using exec_module
     spec.loader.exec_module(module)
-
     return module
 
 
@@ -175,13 +184,10 @@ class ModuleLoader:
             source = path_or_paths
         else:
             source = self._path_or_paths or path_or_paths
-
         if source is None:
             raise ValueError("No source for a module provided")
-
         if isinstance(source, str):
             source = [source]
-
         for path_str in source:
             path = Path(path_str).expanduser().resolve()
             self._process_path(path)

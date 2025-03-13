@@ -66,9 +66,8 @@ class Traceroute:
             ip6: bool = False,
     ) -> None:
         self.dst = dst
-        self.method = method if method in {"icmp", "tcp", "udp"} else "icmp"
+        self.method = method if method in ("icmp", "tcp", "udp") else "icmp"
         self.ip6 = ip6
-
         if not self.ip6:
             self._proto_map = {"icmp": 1, "tcp": 6, "udp": 17}
         else:
@@ -79,7 +78,6 @@ class Traceroute:
             socket.AF_INET if not self.ip6 else socket.AF_INET6,
             proto=self._proto_map[self.method]
         )[0][4][0]
-
         self._tr_results: list[TracerouteResultsPerHop] = []
 
     def _build_packet(
@@ -113,7 +111,6 @@ class Traceroute:
                 src=src,
                 dst=self.dst,
             )
-
         # Build upper layer
         upl_proto_map = {
             "icmp": (ICMP(type=8, code=0, id=id, seq=seq) if not self.ip6
@@ -139,16 +136,13 @@ class Traceroute:
                 ]
             ),
         }
-
         pkt = ip / upl_proto_map[self.method]
-
         # Add data
         if data is None and self.method != "tcp":
             data = b"\x00" * (40 - len(pkt))
             pkt = pkt / Raw(data)
         elif data is not None:
             pkt = pkt / Raw(data)
-
         return pkt
 
     def trace_icmp(
@@ -167,10 +161,8 @@ class Traceroute:
             fexpr = "ip proto 1 and (icmp[0]=0 or icmp[0]=3 or icmp[0]=11)"
         else:
             fexpr = "ip6 proto 58 and (icmp6[0]=1 or icmp6[0]=3 or icmp6[0]=129)"
-
         for hop in range(first_hop, (max_hops + 1)):
             done = False
-
             for p in range(0, count):
                 res = TracerouteResultsPerHop(
                     socket.AF_INET if not self.ip6 else socket.AF_INET6, "icmp",
@@ -180,7 +172,6 @@ class Traceroute:
                 sent_time = time.time()
                 rec = sr1(pkt, timeout=wait_threshold, verbose=False,
                           filter=fexpr)
-
                 if rec:
                     recv_time = time.time()
                     host = rec[IP if not self.ip6 else IPv6].src
@@ -189,21 +180,16 @@ class Traceroute:
                     except socket.herror:
                         hostname = host
                     rtt = (recv_time - sent_time) * 1000
-
                     res.host = host
                     res.hostname = hostname
                     res.rtt = rtt
-
                     if res.host == self.dst:
                         done = True
                 else:
                     res.timeout_hit = True
-
                 if callback:
                     callback(res)
-
                 self._tr_results.append(res)
-
             if done:
                 break
 
@@ -227,10 +213,8 @@ class Traceroute:
             fexpr = "ip proto 1 and (icmp[0]=3 or icmp[0]=11)"
         else:
             fexpr = "ip6 proto 58 and (icmp6[0]=1 or icmp6[0]=3)"
-
         for hop in range(first_hop, (max_hops + 1)):
             done = False
-
             for p in range(0, count):
                 res = TracerouteResultsPerHop(
                     socket.AF_INET if not self.ip6 else socket.AF_INET6, "udp",
@@ -241,7 +225,6 @@ class Traceroute:
                 sent_time = time.time()
                 rec = sr1(pkt, timeout=wait_threshold, verbose=False,
                           filter=fexpr)
-
                 if rec:
                     recv_time = time.time()
                     host = rec[IP if not self.ip6 else IPv6].src
@@ -250,21 +233,16 @@ class Traceroute:
                     except socket.herror:
                         hostname = host
                     rtt = (recv_time - sent_time) * 1000
-
                     res.host = host
                     res.hostname = hostname
                     res.rtt = rtt
-
                     if res.host == self.dst:
                         done = True
                 else:
                     res.timeout_hit = True
-
                 if callback:
                     callback(res)
-
                 self._tr_results.append(res)
-
             if done:
                 break
 
@@ -293,7 +271,6 @@ class Traceroute:
 
         for hop in range(first_hop, (max_hops + 1)):
             done = False
-
             for p in range(0, count):
                 res = TracerouteResultsPerHop(
                     socket.AF_INET if not self.ip6 else socket.AF_INET6, "tcp",
@@ -304,7 +281,6 @@ class Traceroute:
                 sent_time = time.time()
                 rec = sr1(pkt, timeout=wait_threshold, verbose=False,
                           filter=fexpr)
-
                 if rec:
                     recv_time = time.time()
                     host = rec[IP if not self.ip6 else IPv6].src
@@ -313,21 +289,16 @@ class Traceroute:
                     except socket.herror:
                         hostname = host
                     rtt = (recv_time - sent_time) * 1000
-
                     res.host = host
                     res.hostname = hostname
                     res.rtt = rtt
-
                     if res.host == self.dst:
                         done = True
                 else:
                     res.timeout_hit = True
-
                 if callback:
                     callback(res)
-
                 self._tr_results.append(res)
-
             if done:
                 break
 
@@ -444,10 +415,8 @@ def _startup_info(flags: Namespace) -> str:
             "destination port": (str(flags.dport), _colors.pink),
             "fixed destination port": (str(flags.static_dport).lower(), _colors.pink)
         })
-
     max_key_length = max(len(key) for key in prelude_data.keys())
     prelude_parts = []
-
     for key, (value, color) in prelude_data.items():
         if key == "unet":
             prelude_parts.append(
@@ -459,10 +428,8 @@ def _startup_info(flags: Namespace) -> str:
         else:
             formatted_key = f"{Color.color(key, _colors.green)}"
             formatted_value = f"{Color.color(value, color)}"
-
         padding = " " * (max_key_length - len(key) + 2)
         prelude_parts.append(f"{formatted_key}:{padding}{formatted_value}")
-
     return "\n  ".join(prelude_parts)
 
 
@@ -607,11 +574,9 @@ def main(args: list[str]) -> None:
     )
     parser.add_arguments(TRACEROUTE_FLAGS)
     flags = parser.parse_args(args)
-
     # Print startup info
     startup_info = _startup_info(flags)
     print(startup_info, end="\n\n")
-
     # Run
     try:
         # We use signals directly  because suddenly scapy just decided not to
@@ -624,15 +589,12 @@ def main(args: list[str]) -> None:
 
         def _pretty_print_results(res: TracerouteResultsPerHop) -> None:
             nonlocal prev_host, current_packet_num, packets_left
-
             current_packet_num = res.packet
             if not packets_left:
                 packets_left = res.count
-
             if packets_left == res.count:
                 packet = Color.color(str(res.packet), _colors.yellow)
                 print(f"{packet}. ", end="", flush=True)
-
             if res.timeout_hit:
                 no_res = Color.color("-", _colors.light_gray)
                 print(no_res + " ", end="", flush=True)
@@ -641,7 +603,6 @@ def main(args: list[str]) -> None:
                         and (packets_left != res.count)):
                     print()
                     print(" " * len(f"{res.packet}. "), end="")
-
                 if res.hostname != res.host:
                     if packets_left == res.count or res.host != prev_host:
                         hostname = Color.color(res.hostname, _colors.green)
@@ -655,14 +616,11 @@ def main(args: list[str]) -> None:
                         print(f"{host}: ", end="", flush=True)
                     else:
                         print("", end="")
-
                 rtt = (Color.color(f"{res.rtt:.3f}", _colors.pink)
                        + Color.color("ms", _colors.light_pink))
                 print(rtt + " ", end="", flush=True)
-
             prev_host = res.host
             packets_left -= 1
-
             if not packets_left:
                 print()
 

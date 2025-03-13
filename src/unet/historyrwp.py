@@ -28,7 +28,6 @@ class HistoryRWP:
     ) -> None:
         self._fpath = Path(file).expanduser().resolve()
         self._mode = ""
-
         if not self._fpath.exists():
             self._fpath.touch(mode=0o664, exist_ok=True)
             self._mode = "rb" if mode == "read" else "a"
@@ -36,7 +35,6 @@ class HistoryRWP:
             self._mode = "a"
         else:
             self._mode = "rb" if mode == "read" else "a"
-
         self._fd = self._fpath.open(self._mode)
 
     def __enter__(self) -> "HistoryRWP":
@@ -69,25 +67,19 @@ class HistoryRWP:
         """
         if self._mode != "rb":
             return 0
-
         if size < 0:
             return -1
-
         bytes_read = 0
-
         try:
             while size > 0:
                 chunk = self._fd.read(min(size, 1024))
-
                 if not chunk:
                     break
-
                 buf.extend(chunk)
                 bytes_read += len(chunk)
                 size -= len(chunk)
         except KeyboardInterrupt:
             self._fd.close()
-
         return bytes_read
 
     def write(self, msg: str, /) -> int:
@@ -106,7 +98,6 @@ class HistoryRWP:
         """
         if self._mode == "rb":
             return 0
-
         datefmt = datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S.%f")
         fmt = f"[{datefmt}]: {msg}\n"
 
@@ -122,41 +113,29 @@ class HistoryRWP:
         """
         if self._mode != "rb":
             return
-
         lines = []
-
         fsize = self._fpath.stat().st_size
         max_x = shutil.get_terminal_size().columns - 1
-
         top_sep = Assets.HORIZONTAL_LINE * max_x
         top_sep = Color.gray(
             f"{top_sep[:2]}{Assets.TOP_T_INTERSECTION}{top_sep[2:]}")
-
         middle_sep = Assets.HORIZONTAL_LINE * max_x
         middle_sep = Color.gray(
             f"{middle_sep[:2]}{Assets.CROSS}{middle_sep[2:]}")
-
         bottom_sep = Assets.HORIZONTAL_LINE * max_x
         bottom_sep = Color.gray(
             f"{bottom_sep[:2]}{Assets.BOTTOM_T_INTERSECTION}{bottom_sep[2:]}")
-
         edge_sep = Color.gray(Assets.VERTICAL_LINE)
-
         try:
             str_path = Color.blue(str(self._fpath))
             path_line = f"{top_sep}  {edge_sep} path: {str_path}\n{middle_sep}"
             lines.append(path_line)
-
             while fsize > 0:
                 line = self._fd.readline()
-
                 time = Color.yellow(line.decode().split(": ")[0])
                 message = Color.green(line.decode().split(": ")[1].strip("\n"))
-
                 lines.append(f"  {edge_sep} {time}: {message}")
-
                 fsize -= len(line)
-
             lines.append(bottom_sep)
             print("\n".join(lines))
         except KeyboardInterrupt:

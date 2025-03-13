@@ -190,8 +190,12 @@ def if_default_routing_interface(addr: str, /) -> str | None:
     laddr = _get_local_ip(ver, addr)
     if platform.system() == "Linux":
         try:
-            result = subprocess.run(["ip", "addr"], capture_output=True,
-                                    text=True, check=True)
+            result = subprocess.run(
+                ["ip", "addr"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
             output = result.stdout
             iface = None
             for line in output.split("\n"):
@@ -205,8 +209,12 @@ def if_default_routing_interface(addr: str, /) -> str | None:
             return None
     elif platform.system() == "Darwin":
         try:
-            result = subprocess.run(["ifconfig"], capture_output=True,
-                                    text=True, check=True)
+            result = subprocess.run(
+                ["ifconfig"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
             output = result.stdout
             iface = None
             for line in output.split("\n"):
@@ -341,42 +349,33 @@ def _load_ping_modules(external: str | None = None) -> dict[str, ModuleType]:
         for item in path.rglob("*.py"):
             name = item.name
             stem = item.stem
-
             if name in exclude:
                 continue
-
             handle = load_module(str(item), stem)
             if handle is None:
                 continue
-
             handles[stem] = handle
 
     process_directory(built_in_path)
-
     if external is not None:
         external_path = Path(external).expanduser().resolve()
-
         if external_path.is_dir():
             process_directory(external_path)
         elif external_path.is_file() and external_path.suffix == ".py":
             handle = load_module(str(external_path), external_path.stem)
             if handle is not None:
                 handles[external_path.stem] = handle
-
     return handles
 
 
 def _build_ping_flags(external: str | None = None) -> dict[Any, Any]:
     ping_modules = _load_ping_modules(external)
     ping_flags = {}
-
     for name, handle in ping_modules.items():
         if not lookup_symbol(handle, f"{name.upper()}_FLAGS"):
             continue
-
         flags = getattr(handle, f"{name.upper()}_FLAGS")
         ping_flags |= flags
-
     return ping_flags
 
 
@@ -408,107 +407,82 @@ class Statistics:
 def packet_send(opt: PingOptions) -> None:
     ping_modules = _load_ping_modules()
     send_table = {}
-
     for name, handle in ping_modules.items():
         if (not lookup_symbol(handle, f"{name}_send")
                 and not lookup_symbol(handle, "register_send_routine")
                 and not lookup_symbol(handle, "create_method")):
             continue
-
         if lookup_symbol(handle, "create_method"):
             create_method = getattr(handle, "create_method")
             method = create_method()
             send_table[method] = None
-
         if lookup_symbol(handle, "register_send_routine"):
             register_send_routine = getattr(handle, "register_send_routine")
             method, send_routine = register_send_routine()
-
             send_table[method] = send_routine
-
     if opt.method not in send_table:
         raise ValueError(f"method '{opt.method}' does not exist. Create "
                          "the method first and then try to register the "
                          "send routine")
-
     send = send_table[opt.method]
-
     if opt.flood:
         opt.delay = 0
-
         while True:
             send(opt, opt.payload)
-
     targets = opt.ip_dst
     if opt.count > 0:
         for target in opt.ip_dst:
             opt.ip_dst = target
-
             for _ in range(opt.count):
                 send(opt, opt.payload)
-
                 if opt.no_sent:
                     opt.stat.sent += 1
     else:
         next_target = 0
-
         while True:
             try:
                 opt.ip_dst = targets[next_target]
             except IndexError:
                 next_target = 0
-
             send(opt, opt.payload)
-
             next_target += 1
 
 
 def list_methods() -> dict[str, tuple[str, Any]]:
     ping_modules = _load_ping_modules()
     methods = {}
-
     for name, handle in ping_modules.items():
         if (not lookup_symbol(handle, f"{name}_send")
                 and not lookup_symbol(handle, "register_send_routine")
                 and not lookup_symbol(handle, "create_method")):
             continue
-
         if lookup_symbol(handle, "register_send_routine"):
             register_send_routine = getattr(handle, "register_send_routine")
             method, send_routine = register_send_routine()
-
             methods[method] = (handle.__file__, send_routine.__name__)
-
     return methods
 
 
 def startup_info(si: StartupInfo, opt: PingOptions) -> str:
     from unet.modules.dissect import FieldFormatterColor
-
     lines = []
     colors = FieldFormatterColor()
-
     # Create top and bottom separators
     terminal_width = shutil.get_terminal_size().columns - 2
     top_sep = Assets.HORIZONTAL_LINE * terminal_width
     top_sep = f"{top_sep[:2]}{Assets.TOP_T_INTERSECTION}{top_sep[2:]}"
-
     bottom_sep = Assets.HORIZONTAL_LINE * terminal_width
     bottom_sep = f"{bottom_sep[:2]}{Assets.BOTTOM_T_INTERSECTION}{bottom_sep[2:]}"
-
     # Color the separators
     top_sep = Color.color(top_sep, colors.sep)
     bottom_sep = Color.color(bottom_sep, colors.sep)
-
     # Prepare content information
     targets = ", ".join([
         f"{addr} ({socket.getaddrinfo(addr, None, socket.AF_INET if not opt.ip6 else socket.AF_INET6)[0][4][0]})"
         for addr in si.targets
     ])
-
     interface = f"{si.interface} ({if_addr(si.interface, 'inet6' if opt.ip6 else 'inet')})"
     payload_size = si.payload
-
     contents = {
         "targets": targets,
         "interface": interface,
@@ -518,19 +492,15 @@ def startup_info(si: StartupInfo, opt: PingOptions) -> str:
         "delay": f"{si.delay} s",
         "payload": f"{payload_size} byte(s)",
     }
-
     # Find the longest key for alignment
     max_key_len = max(len(k) for k in contents)
-
     # Format each line with proper indentation and colors
     for key, value in contents.items():
         indent = (max_key_len - len(key)) + 1
         key_colored = Color.color(key, colors.name)
         value_colored = Color.color(value, colors.value)
         sep_colored = Color.color(Assets.VERTICAL_LINE, colors.sep)
-
         lines.append(f"  {sep_colored} {key_colored}:{' ' * indent}{value_colored}")
-
     # Format the full output
     formatted_lines = "\n".join(lines)
     return f"{top_sep}\n{formatted_lines}\n{bottom_sep}"
@@ -542,31 +512,25 @@ def summary(stat: Statistics, opt: PingOptions) -> str:
     # Initialize lines and colors
     lines = []
     colors = FieldFormatterColor()
-
     # Generate top and bottom separators
     terminal_width = shutil.get_terminal_size().columns - 2
     top_sep = Assets.HORIZONTAL_LINE * terminal_width
     top_sep = f"{top_sep[:2]}{Assets.TOP_T_INTERSECTION}{top_sep[2:]}"
-
     bottom_sep = Assets.HORIZONTAL_LINE * terminal_width
     bottom_sep = f"{bottom_sep[:2]}{Assets.BOTTOM_T_INTERSECTION}{bottom_sep[2:]}"
-
     # Color the separators
     top_sep = Color.color(top_sep, colors.sep)
     bottom_sep = Color.color(bottom_sep, colors.sep)
-
     # Prepare summary contents
     targets = ", ".join([
         f"{addr} ({socket.getaddrinfo(addr, None, socket.AF_INET if not opt.ip6 else socket.AF_INET6)[0][4][0]})"
         for addr in stat.targets
     ])
-
     contents = {
         "targets": targets,
         "transmitted": str(stat.sent) if stat.sent > 0 else "-",
         "received": str(stat.recv) if stat.recv > 0 else "-",
     }
-
     # Calculate packet loss rate
     if stat.sent == 0:
         loss_rate = 0
@@ -578,18 +542,15 @@ def summary(stat: Statistics, opt: PingOptions) -> str:
             stat.sent = stat.sent - opt.count
             contents["transmitted"] = str(stat.sent)
         loss_rate = 100 * (stat.sent - stat.recv) / stat.sent
-
     # Packet loss information
     if "transmitted by kernel" not in contents:
         contents["lost"] = "-" if stat.sent == -1 and stat.recv == -1 else f"{int(stat.lost)} ({loss_rate:.2f} %)"
     else:
         contents["lost"] = "-" if not loss_rate else f"{int(stat.lost)} ({loss_rate:.2f} %)"
-
     # RTT information
     contents["rtt max"] = f"{stat.rtt_max:.6f} ms" if stat.rtt_max else "n/a"
     contents["rtt min"] = f"{stat.rtt_min:.6f} ms" if stat.rtt_min else "n/a"
     contents["rtt avg"] = f"{stat.rtt_avg:.6f} ms" if stat.rtt_avg else "n/a"
-
     # Format each line of the summary
     max_key_len = max(len(k) for k in contents)
     for key, value in contents.items():
@@ -597,9 +558,7 @@ def summary(stat: Statistics, opt: PingOptions) -> str:
         key_colored = Color.color(key, colors.name)
         value_colored = Color.color(value, colors.value)
         sep_colored = Color.color(Assets.VERTICAL_LINE, colors.sep)
-
         lines.append(f"  {sep_colored} {key_colored}:{' ' * indent}{value_colored}")
-
     # Format the full output
     formatted_lines = "\n".join(lines)
     return f"{top_sep}\n{formatted_lines}\n{bottom_sep}"
@@ -752,13 +711,10 @@ def main(args: list[str]) -> None:
     ping_flags: dict[str, Group | PositionalFlag | OptionFlag] = PING_FLAGS | _build_ping_flags(None) | _EXAMPLES_OF_USAGE
     parser.add_arguments(ping_flags)
     flags = parser.parse_args(args)
-
     if flags.list_methods:
         from unet.modules.dissect import FieldFormatterColor
-
         colors = FieldFormatterColor()
         methods = list_methods()
-
         for method, spec in methods.items():
             output = "%s: (%s) from %s %s" % (
                 Color.color(method, colors.alt_name),
@@ -767,19 +723,15 @@ def main(args: list[str]) -> None:
                 Color.color(spec[0], colors.alt_unit),
             )
             print(output)
-
         return
-
     stat = Statistics()
     setattr(flags, "stat", stat)
-
     # Adjust target(s)
     if flags.target is None and flags.ip_dst is None:
         error("destination host is required but was not supplied. "
               "Use '--ip-dst' or positional 'target' to set the destination host")
     elif flags.target is not None and flags.ip_dst is None:
         flags.ip_dst = flags.target
-
     unresolved_targets = flags.ip_dst
     resolved_targets = []
     if not flags.no_target_resolve:
@@ -798,18 +750,14 @@ def main(args: list[str]) -> None:
     else:
         for target in flags.ip_dst:
             resolved_targets.append(target)
-
     flags.ip_dst = resolved_targets
-
     for target in flags.ip_dst:
         if not is_valid_addr(target):
             error(f"invalid target address: {target}")
-
         if flags.ip6 and addr_is_v4(target):
             error(f"expected IPv6 targets, however IPv4 was supplied: {target}")
         elif not flags.ip6 and addr_is_v6(target):
             error(f"expected IPv4 targets, however IPv6 was supplied: {target}")
-
     # Setup interface
     if flags.interface is None:
         flags.interface = if_default_routing_interface(flags.ip_dst[0])
@@ -817,24 +765,19 @@ def main(args: list[str]) -> None:
             error(f"could not determine which interface to use to send data to "
                   f"host: '{flags.ip_dst[0]}'. Please specify it manually and "
                   f"try again")
-
     # At this point interface shouldn't be None
     assert flags.interface is not None
-
     ip_src_ver = "inet" if not flags.ip6 else "inet6"
     flags.ip_src = if_addr(flags.interface, ip_src_ver) if flags.ip_src is None else flags.ip_src
-
     # Set MTU
     if flags.mtu == -1:
         flags.mtu = if_mtu(flags.interface)
-
     # Adjust payload
     if flags.payload is not None:
         # If a specific payload length is given, adjust the payload to fit
         if flags.payload_len > -1:
             # Truncate or pad the payload to fit the length
             flags.payload = flags.payload[:flags.payload_len].ljust(flags.payload_len, flags.payload[0])
-
         if not flags.payload_as_hex:
             flags.payload = flags.payload.encode()
         else:
@@ -842,14 +785,12 @@ def main(args: list[str]) -> None:
                 flags.payload = bytes.fromhex(flags.payload)
             except ValueError as e:
                 error(str(e))
-
     # Append random bytes if requested
     if flags.payload_rand > 0:
         if flags.payload is None:
             flags.payload = bytes(secrets.randbits(8) for _ in range(flags.payload_rand))
         else:
             flags.payload += bytes(secrets.randbits(8) for _ in range(flags.payload_rand))
-
     # Print the startup info
     si = StartupInfo(
         unresolved_targets,
@@ -862,16 +803,13 @@ def main(args: list[str]) -> None:
     )
     prelude = startup_info(si, flags)
     print(prelude, end="\n" * 2)
-
     # Start the send loop
     if not flags.no_capture:
         if flags.bpf is not None:
             bpf = flags.bpf
         else:
             bpf_ip_ver = "ip" if not flags.ip6 else "ip6"
-
             bpf_parts = []
-
             if not flags.no_sent:
                 for target in flags.ip_dst:
                     bpf_parts.append(f"({bpf_ip_ver} src {flags.ip_src} "
@@ -882,17 +820,12 @@ def main(args: list[str]) -> None:
                 for target in flags.ip_dst:
                     bpf_parts.append(f"({bpf_ip_ver} src {target} and {bpf_ip_ver} "
                                      f"dst {flags.ip_src})")
-
             bpf = " or ".join(bpf_parts)
-
             if flags.bpf_append is not None:
                 bpf += f" and ({flags.bpf_append})"
-
         target_list = flags.ip_dst
-
         if flags.save is not None:
             flags.save = str(Path(flags.save).expanduser().resolve())
-
         dissect = Dissect("live", interface=flags.interface, wfile=flags.save,
                           filter=bpf)
         pkto = PacketOptions(flags.verbose, False, flags.num, flags.hexdump,
@@ -900,18 +833,14 @@ def main(args: list[str]) -> None:
                              flags.no_ip_resolve, flags.no_port_resolve,
                              flags.sum_ok, False, flags.timestamp, flags.l2,
                              flags.unknown)
-
         dissect.packet_print_loop(pkto, threaded=True)
-
         try:
             packet_send(flags)
         except KeyboardInterrupt:
             pass
         except ValueError as e:
             error(str(e))
-
         dissect.live_stop()
-
         linkhdrlen_map = {
             DLT_NULL: 4,
             DLT_EN10MB: 14,
@@ -939,7 +868,6 @@ def main(args: list[str]) -> None:
             DLT_LINUX_SLL2: 20,
         }
         linkhdrlen = linkhdrlen_map[dissect.live_linktype]
-
         cph = dissect.live_get()
         ts_sent = 0.0
         ts_recv = 0.0
@@ -951,7 +879,6 @@ def main(args: list[str]) -> None:
                 ip = cph.buf[linkhdrlen:]
                 ip_ihl = ip[0] & 0xf
                 ip = ip[:ip_ihl << 2]
-
             try:
                 if flags.ip6:
                     src = str(ipaddress.ip_address(ip[8:24]))
@@ -961,9 +888,7 @@ def main(args: list[str]) -> None:
                     dst = str(ipaddress.ip_address(ip[16:20]))
             except ValueError as e:
                 error(str(e))
-
             pkt_ts = round(cph.timestamp[0] + cph.timestamp[1] / 1000.0, 6)
-
             if src == flags.ip_src and dst == flags.ip_src:
                 flags.stat.sent = -1
                 flags.stat.recv = -1
@@ -973,25 +898,19 @@ def main(args: list[str]) -> None:
             elif src in target_list and dst == flags.ip_src:
                 flags.stat.recv += 1
                 ts_recv = pkt_ts
-
                 if ts_sent > 0 and ts_recv >= ts_sent:
                     rtt = ts_recv - ts_sent
                     rtt_pool.append(rtt)
                     ts_sent = 0.0
-
             cph = dissect.live_get()
-
         flags.stat.lost = flags.stat.sent - flags.stat.recv
-
         if rtt_pool:
             flags.stat.rtt_max = max(rtt_pool)
             flags.stat.rtt_min = min(rtt_pool)
             flags.stat.rtt_avg = sum(rtt_pool) / len(rtt_pool)
         else:
             flags.stat.rtt_max = flags.stat.rtt_min = flags.stat.rtt_avg = 0.0
-
         stat.targets = unresolved_targets
-
         epilog = summary(stat, flags)
         print("\n" + epilog)
     else:

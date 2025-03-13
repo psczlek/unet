@@ -140,4 +140,4 @@ DLT_LINUX_SLL2 = 276
 
 
 def create_dissector_entry() -> str:
-    return 'dl.type'
+    return "dl.type"

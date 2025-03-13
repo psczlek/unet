@@ -71,7 +71,6 @@ IP6_FLAGS: Final = {
 def ip6_send(opt: PingOptions, data: bytes | None = None) -> None:
     # Build packet
     ip = IPv6()
-
     ip.version = opt.ip_ver if opt.ip_ver is not None else 6
     ip.tc = opt.ip_tcls if opt.ip_tcls is not None else 0
     ip.fl = opt.ip_flbl if opt.ip_flbl is not None else 0
@@ -80,18 +79,15 @@ def ip6_send(opt: PingOptions, data: bytes | None = None) -> None:
     ip.hlim = opt.ip_hop if opt.ip_hop is not None else 255
     ip.src = opt.ip_src if opt.ip_src is not None else if_addr(opt.interface, "inet6")
     ip.dst = opt.ip_dst
-
     # Add data
     if data is not None:
         ip = ip / Raw(data)
-
     # Fragment if needed
     if len(ip) > opt.mtu:
         fragsize = opt.mtu - (len(ip) - (len(data) if data is not None else 0))
         fragments = fragment6(ip, fragsize)
     else:
         fragments = ip
-
     # Send packet
     send(fragments, count=1, inter=0, verbose=False)
     time.sleep(opt.delay)

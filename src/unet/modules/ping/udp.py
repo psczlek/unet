@@ -49,19 +49,15 @@ UDP_FLAGS: Final = {
 def udp_send(opt: PingOptions, data: bytes | None = None) -> None:
     # Build packet
     udp = UDP()
-
     udp.sport = opt.sport if opt.sport is not None else rand(16)
     udp.dport = opt.dport if opt.dport is not None else rand(16)
     udp.len = opt.udp_len if opt.udp_len is not None else 0
     udp.chksum = opt.udp_sum if opt.udp_sum is not None else 0
-
     # Add data
     if data is not None:
         udp = udp / Raw(data)
-
     if opt.udp_len is None:
         udp.len = len(udp)
-
     if opt.udp_sum is None:
         if not opt.ip6:
             ph = struct.pack(
@@ -80,10 +76,8 @@ def udp_send(opt: PingOptions, data: bytes | None = None) -> None:
                 len(raw(udp)),
                 17,
             )
-
         chksum = checksum(ph + raw(udp))
         udp.chksum = chksum
-
     # Send packet
     if not opt.ip6:
         if opt.ip_proto is None:
@@ -91,9 +85,7 @@ def udp_send(opt: PingOptions, data: bytes | None = None) -> None:
     else:
         if opt.ip_nh is None:
             opt.ip_nh = 17
-
     udp = raw(udp)
-
     if not opt.ip6:
         ip_send(opt, udp)
     else:

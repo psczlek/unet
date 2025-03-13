@@ -188,7 +188,6 @@ def icmp6_common_dissect(
     icmp_type = buf[0]
     icmp_code = buf[1]
     icmp_chksum = struct.unpack("!H", buf[2:4])[0]
-
     # Type
     try:
         icmp_type_str = ICMPV6_TYPE_MAP[icmp_type]
@@ -196,7 +195,6 @@ def icmp6_common_dissect(
         icmp_type_str = "unknown"
     f.add_field("type", icmp_type_str, alt_value=icmp_type,
                 alt_value_brackets=("(", ")"), alt_sep=" ")
-
     # Code
     if code_map is not None:
         try:
@@ -207,24 +205,19 @@ def icmp6_common_dissect(
                     alt_value_brackets=("(", ")"), alt_sep=" ")
     else:
         f.add_field("code", icmp_code)
-
     # Checksum
     chksum_field = f.add_field("checksum", as_hex(icmp_chksum, 4))
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum_shouldbe,
                                                     ip6_proto_chksum)
-
         computed_chksum = ip6_proto_chksum(buf, pkti.net_src, pkti.net_dst, 58,
                                            len(buf))
         shouldbe = in_chksum_shouldbe(icmp_chksum, computed_chksum)
         is_ok = (shouldbe == icmp_chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
 
 
@@ -246,29 +239,23 @@ def icmp6_unreach_dissect(
         8: "headers too long",
     }
     icmp6_common_dissect(pkto, pkti, buf, f, code_map)
-
     # Unused
     unused = struct.unpack("!I", buf[4:8])[0]
     f.add_field("unused", as_hex(unused, 8), alt_value=unused,
                 alt_value_brackets=("(", ")"), alt_sep=" ")
-
     # Info
     info = f"{ICMPV6_TYPE_MAP[buf[0]]} ({code_map[buf[1]]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMPV6_HDRMINLEN
     if data_len > 0:
         f.add_field("data", data_len, unit="bytes", virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMPV6_HDRMINLEN
     pkti.dissected += ICMPV6_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -281,19 +268,15 @@ def icmp6_unreach_dissect(
 
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 58
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -304,28 +287,22 @@ def icmp6_pkt_too_big_dissect(
         f: FieldFormatter,
 ) -> str | None:
     icmp6_common_dissect(pkto, pkti, buf, f)
-
     # MTU
     mtu = struct.unpack("!I", buf[4:8])[0]
     f.add_field("mtu", mtu)
-
     # Info
     info = f"{ICMPV6_TYPE_MAP[buf[0]]} ({buf[1]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMPV6_HDRMINLEN
     if data_len > 0:
         f.add_field("data", data_len, unit="bytes", virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMPV6_HDRMINLEN
     pkti.dissected += ICMPV6_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -335,22 +312,17 @@ def icmp6_pkt_too_big_dissect(
     else:
         pkti.remaining -= len(buf) - ICMPV6_HDRMINLEN
         pkti.dissected += len(buf) - ICMPV6_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 58
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -365,29 +337,23 @@ def icmp6_timexceeded_dissect(
         1: "fragment reassembly time exceeded",
     }
     icmp6_common_dissect(pkto, pkti, buf, f, code_map)
-
     # Unused
     unused = struct.unpack("!I", buf[4:8])[0]
     f.add_field("unused", as_hex(unused, 8), alt_value=unused,
                 alt_value_brackets=("(", ")"), alt_sep=" ")
-
     # Info
     info = f"{ICMPV6_TYPE_MAP[buf[0]]} ({buf[1]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMPV6_HDRMINLEN
     if data_len > 0:
         f.add_field("data", data_len, unit="bytes", virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMPV6_HDRMINLEN
     pkti.dissected += ICMPV6_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -397,22 +363,17 @@ def icmp6_timexceeded_dissect(
     else:
         pkti.remaining -= len(buf) - ICMPV6_HDRMINLEN
         pkti.dissected += len(buf) - ICMPV6_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 58
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -436,28 +397,22 @@ def icmp6_param_prob_dissect(
         10: "option too big",
     }
     icmp6_common_dissect(pkto, pkti, buf, f, code_map)
-
     # Pointer
     ptr = struct.unpack("!I", buf[4:8])[0]
     f.add_field("pointer", ptr)
-
     # Info
     info = f"{ICMPV6_TYPE_MAP[buf[0]]} ({buf[1]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMPV6_HDRMINLEN
     if data_len > 0:
         f.add_field("data", data_len, unit="bytes", virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMPV6_HDRMINLEN
     pkti.dissected += ICMPV6_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -467,22 +422,17 @@ def icmp6_param_prob_dissect(
     else:
         pkti.remaining -= len(buf) - ICMPV6_HDRMINLEN
         pkti.dissected += len(buf) - ICMPV6_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 58
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -493,17 +443,14 @@ def icmp6_echo_dissect(
         f: FieldFormatter,
 ) -> str | None:
     icmp6_common_dissect(pkto, pkti, buf, f)
-
     # Identifier
     id = struct.unpack("!H", buf[4:6])[0]
     id_field = f.add_field("id", id, alt_value=as_hex(id, 4), alt_sep=" ",
                            alt_value_brackets=("(", ")"))
-
     # Sequence number
     seq = struct.unpack("!H", buf[6:8])[0]
     seq_field = f.add_field("seq", seq, alt_value=as_hex(seq, 4), alt_sep=" ",
                             alt_value_brackets=("(", ")"))
-
     # Data
     data_len = len(buf) - ICMPV6_HDRMINLEN
     if data_len > 0:
@@ -511,42 +458,32 @@ def icmp6_echo_dissect(
         data_field.add_field(
             "data", (hexstr(buf[ICMPV6_HDRMINLEN:], 40)
                      + ("..." if data_len > 40 else "")))
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     if pkto.dump_chunk:
         icmp_hexdump = hexdump(buf, indent=4)
         f.add_field("hexdump", "\n" + icmp_hexdump)
-
     # Update packet info
     pkti.remaining -= ICMPV6_HDRMINLEN + (len(buf) - ICMPV6_HDRMINLEN)
     pkti.dissected += ICMPV6_HDRMINLEN + (len(buf) - ICMPV6_HDRMINLEN)
-
     pkti.next_proto = -1
     pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 58
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     # Update field names
     id_field.name = "identifier"
     seq_field.name = "sequence number"
-
     dump_line_kwargs = {}
     if data_len > 0:
         dump_line_kwargs["data"] = "data"
-
     dump = f.line("type", id="id", seq="seq", **dump_line_kwargs)
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -557,46 +494,36 @@ def icmp6_unk_dissect(
         f: FieldFormatter,
 ) -> str | None:
     icmp6_common_dissect(pkto, pkti, buf, f)
-
     info = f"unknown ICMPv6 type: type={buf[0]}, code={buf[1]}"
     f.add_field("info", info, virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= len(buf)
     pkti.dissected += len(buf)
-
     pkti.next_proto = -1
     pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
 def icmp6_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     protocol = "ICMPv6"
     f = FieldFormatter(protocol)
-
     if len(buf) < ICMPV6_HDRMINLEN:
         pkti.invalid = True
         pkti.invalid_proto_name = protocol
         pkti.invalid_msg = f"INVALID ICMPv6 PACKET: BAD LENGTH: {len(buf)}"
         return ""
-
     icmp6_dissect_map: dict[int, Callable[[PacketOptions, PacketInfo, bytes, FieldFormatter], str | None]] = {
         ICMPv6Type.UNREACH: icmp6_unreach_dissect,
         ICMPv6Type.PKT_TOO_BIG: icmp6_pkt_too_big_dissect,
@@ -605,23 +532,18 @@ def icmp6_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
         ICMPv6Type.ECHO_REQ: icmp6_echo_dissect,
         ICMPv6Type.ECHO_REP: icmp6_echo_dissect,
     }
-
     icmp_type = buf[0]
     try:
         dissector = icmp6_dissect_map[icmp_type]
     except KeyError:
         dissector = icmp6_unk_dissect
-
     assert pkti.proto_stack is not None
     assert pkti.proto_map is not None
-
     pkti.proto_stack.append("icmp6")
     pkti.proto_map["icmp6"] = f
-
     dump = dissector(pkto, pkti, buf, f)
     if dump is None:
         return ""
-
     return dump
 
 

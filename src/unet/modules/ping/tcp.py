@@ -152,7 +152,6 @@ TCP_FLAGS: Final = {
 def tcp_send(opt: PingOptions, data: bytes | None = None) -> None:
     # Build packet
     tcp = TCP()
-
     tcp.sport = opt.sport if opt.sport is not None else rand(16)
     tcp.dport = opt.dport if opt.dport is not None else rand(16)
     tcp.seq = opt.tcp_seq if opt.tcp_seq is not None else rand(32)
@@ -179,20 +178,17 @@ def tcp_send(opt: PingOptions, data: bytes | None = None) -> None:
                 0x80: {"c", "cwr"},
                 0x100: {"n", "aecn"},
             }
-
             for flag in flag_list:
                 flag = flag.lower()
                 for v, s in tcp_flags_map.items():
                     if flag in s:
                         flags |= v
-
         tcp.flags = flags
     else:
         tcp.flags = 0x2
     tcp.window = opt.tcp_win if opt.tcp_win is not None else rand(16)
     tcp.chksum = opt.tcp_sum if opt.tcp_sum is not None else 0
     tcp.urgptr = opt.tcp_uptr if opt.tcp_uptr is not None else 0
-
     # Add options
     if opt.tcp_opt is not None:
         tcp_opts = []
@@ -205,25 +201,18 @@ def tcp_send(opt: PingOptions, data: bytes | None = None) -> None:
             "sackp": ("SAckOK", ""),
             "sack": ("SAck", tuple(edge for pair in zip(opt.tcp_opt_sack_left, opt.tcp_opt_sack_right) for edge in pair)),
         }
-
         for name in opt.tcp_opt:
             name = name.lower()
-
             if name not in tcp_opt_map:
                 continue
-
             tcp_opt = tcp_opt_map[name]
             tcp_opts.append(tcp_opt)
-
         tcp.options = tcp_opts
-
         if opt.tcp_hlen is None:
             tcp.dataofs = len(raw(tcp)) >> 2
-
     # Add data
     if data is not None:
         tcp = tcp / Raw(data)
-
     if opt.tcp_sum is None:
         if not opt.ip6:
             ph = struct.pack(
@@ -242,10 +231,8 @@ def tcp_send(opt: PingOptions, data: bytes | None = None) -> None:
                 len(raw(tcp)),
                 6
             )
-
         chksum = checksum(ph + raw(tcp))
         tcp.chksum = chksum
-
     # Send packet
     if not opt.ip6:
         if opt.ip_proto is None:
@@ -253,9 +240,7 @@ def tcp_send(opt: PingOptions, data: bytes | None = None) -> None:
     else:
         if opt.ip_nh is None:
             opt.ip_nh = 6
-
     tcp = raw(tcp)
-
     if not opt.ip6:
         ip_send(opt, tcp)
     else:

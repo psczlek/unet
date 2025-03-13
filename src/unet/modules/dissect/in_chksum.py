@@ -12,23 +12,20 @@ __all__ = [
 def in_chksum(buf: bytes) -> int:
     if len(buf) % 2 != 0:
         buf += b"\x00"
-
     checksum = 0
     for i in range(0, len(buf), 2):
         word = struct.unpack("!H", buf[i:i + 2])[0]
         checksum += word
-
-    checksum = (checksum >> 16) + (checksum & 0xFFFF)
-    checksum = ~checksum & 0xFFFF
-
+    checksum = (checksum >> 16) + (checksum & 0xffff)
+    checksum = ~checksum & 0xffff
     return checksum
 
 
 def in_chksum_shouldbe(sum: int, computed_sum: int) -> int:
     shouldbe = sum
     shouldbe += ntohs(computed_sum)
-    shouldbe = (shouldbe & 0xFFFF) + (shouldbe >> 16)
-    shouldbe = (shouldbe & 0xFFFF) + (shouldbe >> 16)
+    shouldbe = (shouldbe & 0xffff) + (shouldbe >> 16)
+    shouldbe = (shouldbe & 0xffff) + (shouldbe >> 16)
     return shouldbe
 
 

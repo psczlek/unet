@@ -42,7 +42,6 @@ except ModuleNotFoundError:
         "%*s pip install libpcap" % (6, ""),
         "%*s pip3 install libpcap" % (6, ""),
     ])
-
     _error(error_message)
 
 __all__ = [
@@ -115,9 +114,7 @@ def get_capture_devs() -> dict[str, tuple[str | None, list[str]]]:
     def get_flags(bits: int) -> list[str]:
         if bits == 0:
             return ['NONE']
-
         flags = []
-
         flag_bits = [
             (pcap.PCAP_IF_UP, 'UP'),
             (pcap.PCAP_IF_RUNNING, 'RUNNING'),
@@ -127,7 +124,6 @@ def get_capture_devs() -> dict[str, tuple[str | None, list[str]]]:
         for flag_bit, label in flag_bits:
             if flag_bit & bits:
                 flags.append(label)
-
         if bits & pcap.PCAP_IF_CONNECTION_STATUS:
             connection_status_bits = [
                 (pcap.PCAP_IF_CONNECTION_STATUS_UNKNOWN, 'UNKNOWN'),
@@ -139,32 +135,24 @@ def get_capture_devs() -> dict[str, tuple[str | None, list[str]]]:
                 if (bits & pcap.PCAP_IF_CONNECTION_STATUS) == flag_bit:
                     flags.append(label)
                     break
-
         return flags
-
     errbuf = c.create_string_buffer(pcap.PCAP_ERRBUF_SIZE)
     devs = {}
     devlist = c.POINTER(pcap.pcap_if_t)()
-
     if pcap.findalldevs(c.byref(devlist), errbuf) != 0:
         message = errbuf.value.decode('utf-8').lower()
         raise DissectError(message)
-
     dev = devlist
     while dev:
         name = dev.contents.name.decode('utf-8')
         description = dev.contents.description
-
         if description is not None:
             description = description.decode('utf-8')
-
         flags = get_flags(dev.contents.flags)
         spec = description, flags
         devs[name] = spec
         dev = dev.contents.next
-
     pcap.freealldevs(devlist)
-
     return devs
 
 
@@ -197,21 +185,16 @@ def as_bin(v: int, width: int, offset: int = 0, num_bits: int = 0) -> str:
     # Pad the binary string with 0s to reach `num_bits` length. If `num_bits` is <= 0,
     # pad to the nearest multiple of 4 bits based on the current length of `bin_str`
     bin_str = bin_str.zfill(num_bits if num_bits > 0 else ((len(bin_str) + 3) // 4) * 4)
-
     # Truncate the string to the last `num_bits`
     if num_bits > 0:
         bin_str = bin_str[-num_bits:]
-
     # Replace leading unused bits with dots based on the `offset` value
     bin_str = "." * offset + bin_str
-
     # Pad the end with dots to ensure the string aligns with the specified `width`
     if len(bin_str) < width:
         bin_str = bin_str.ljust(width, ".")
-
     # Split the binary representation into chunks of 4 bits
     groups = [bin_str[i:i + 4] for i in range(0, len(bin_str), 4)]
-
     # Join the 4-bit groups with spaces in between and return the formatted string
     formatted_str = " ".join(groups)
     return formatted_str
@@ -236,7 +219,7 @@ def as_hex(v: int, width: int) -> str:
     """
     # For ones this function shouldn't exist when we can just write an f-string
     # directly, but when dealing with a lot of hex formats having that as a function
-    # will be more readable
+    # will be more readable (probably)
     return f"0x{v:0{width}x}"
 
 
@@ -267,13 +250,10 @@ def hexdump(buf: bytes, width: int = 16, indent: int = 0) -> str:
         ascii_chars = "".join(chr(byte) if 32 <= byte < 127 else "." for byte in chunk)
         # Result ~= [0x0000] 41 41 41 41 41... AAAAA...
         return f"{' ' * indent}[0x{address:04x}]  {hex_bytes:<{width * 3}}  {ascii_chars}"
-
     result = []
-
     for i in range(0, len(buf), width):
         chunk = buf[i:i + width]
         result.append(format_line(i, chunk))
-
     return "\n".join(result)
 
 
@@ -420,16 +400,12 @@ class Note:
         """
         if self.notes is None:
             self.notes = []
-
         if len(prefix_sep) > 1:
             prefix_sep = prefix_sep[0]
-
         note = Note(contents, prefix, prefix_sep)
         self.notes.append(note)
-
         if notes is not None:
             self.notes.extend(notes)
-
         return note
 
 
@@ -598,20 +574,15 @@ class Field:
         """
         if self.fields is None:
             self.fields = []
-
         if not isinstance(value, str):
             value = _convert_value(value)
-
         if alt_value is not None:
             if not isinstance(alt_value, str):
                 alt_value = _convert_value(alt_value)
-
         field = Field(name, value, bin_field, unit, value_brackets, sep,
                       alt_name, alt_value, alt_unit, alt_value_brackets,
                       alt_sep, virtual, fields, notes)
-
         self.fields.append(field)
-
         return field
 
     def add_note(
@@ -645,17 +616,12 @@ class Field:
         """
         if self.notes is None:
             self.notes = []
-
         if len(prefix_sep) > 0:
             prefix_sep = prefix_sep[0]
-
         note = Note(contents, prefix, prefix_sep)
-
         self.notes.append(note)
-
         if notes is not None:
             self.notes.extend(notes)
-
         return note
 
 
@@ -778,24 +744,20 @@ class FieldFormatter:
             self.protocol = self.UNKNOWN_PROTO
         else:
             self.protocol = protocol
-
         self.brackets = brackets
         if self.brackets is not None:
             if len(self.brackets) < 2:
                 self.brackets = "[]"
             elif len(self.brackets) > 2:
                 self.brackets = self.brackets[:2]
-
         self.wrap = wrap
         self.wrap_at = wrap_at
         if self.wrap and self.wrap_at is None:
             self.wrap_at = shutil.get_terminal_size().columns - len(self.protocol)
-
         self.colorify = colorify
         self.colors = colors
         if self.colorify and self.colors is None:
             self.colors = FieldFormatterColor()
-
         self._fields: dict[str, Field] = {}
         self._notes: dict[int, Note] = {}
         self._note_offset = 0
@@ -819,17 +781,13 @@ class FieldFormatter:
     ) -> Field:
         if not isinstance(value, str):
             value = _convert_value(value)
-
         if alt_value is not None:
             if not isinstance(alt_value, str):
                 alt_value = _convert_value(alt_value)
-
         field = Field(name, value, bin_field, unit, value_brackets, sep,
                       alt_name, alt_value, alt_unit, alt_value_brackets,
                       alt_sep, virtual, fields, notes)
-
         self._fields[name] = field
-
         return field
 
     def line(self, *args: str, **kwargs: str) -> str:
@@ -837,29 +795,23 @@ class FieldFormatter:
         Short, one line representation
         """
         lines = []
-
         if self.brackets is not None:
             open, close = self.brackets[0], self.brackets[1]
-
             if self.colorify:
                 open, close = (Color.color(open, self.colors.value_brackets),
                                Color.color(close, self.colors.value_brackets))
         else:
             open, close = ("",) * 2
-
         if (not len(args) and not len(kwargs)) or not len(self._fields):
             lines.extend([open, f"<{self.EMPTY_PROTO}>", close])
             return "%s %s" % (self.protocol, "".join(lines))
-
         if len(args):
             for arg in args:
                 try:
                     field = self._fields[arg]
                     field_val = field.value
-
                     if self.colorify and self.colors is not None:
                         field_val = Color.color(field_val, self.colors.value)
-
                     lines.append(field_val)
                 except KeyError:
                     if self.colorify and self.colors is not None:
@@ -868,47 +820,34 @@ class FieldFormatter:
                             arg = Color.color(arg, self.colors.sep)
                         else:
                             arg = Color.color(arg, self.colors.alt_unit)
-
                     lines.append(arg)
-
             formatted_lines = " ".join(lines)
             formatted_lines = "%s%s%s" % (open, formatted_lines, close)
-
         if len(kwargs):
             if "junction" in kwargs:
                 junction = kwargs.pop("junction")
             else:
                 junction = "="
-
             if self.colorify and self.colors is not None:
                 junction = Color.color(junction, self.colors.sep)
-
             for key, value in kwargs.items():
                 if self.colorify and self.colors is not None:
                     key = Color.color(key, self.colors.name)
-
                 line = [key + junction]
-
                 try:
                     field = self._fields[value]
                     field_val = field.value
-
                     if self.colorify and self.colors is not None:
                         field_val = Color.color(field_val, self.colors.value)
-
                     line.append(field_val)
                 except KeyError:
                     line.append(value)
-
                 lines.append("".join(line))
-
             formatted_lines = " ".join(lines)
             formatted_lines = "%s%s%s" % (open, formatted_lines, close)
-
         prefix = self.protocol
         if self.colorify and self.colors is not None:
             prefix = Color.color(prefix, self.colors.protocol)
-
         if self.wrap:
             if self.wrap_at is not None:
                 if len(formatted_lines) > self.wrap_at:
@@ -916,54 +855,42 @@ class FieldFormatter:
                     indent = len(prefix) + 1
                     lines[1:] = [f"{' ' * indent}{line}" for line in lines[1:]]
                     formatted_lines = "\n".join(lines)
-
         dump = "%s %s" % (prefix, formatted_lines)
-
         return dump
 
     def _color_field(self, field: Field) -> Field:
         if self.colors is not None:
             name = Color.color(field.name, self.colors.name)
             value = Color.color(field.value, self.colors.value)
-
             unit = field.unit
             if unit is not None:
                 unit = Color.color(unit, self.colors.unit)
-
             value_brackets = field.value_brackets
             if value_brackets is not None:
                 value_brackets = (
                     Color.color(value_brackets[0], self.colors.value_brackets),
                     Color.color(value_brackets[1], self.colors.value_brackets),
                 )
-
             sep = Color.color(field.sep, self.colors.sep)
-
             alt_name = field.alt_name
             if alt_name is not None:
                 alt_name = Color.color(alt_name, self.colors.alt_name)
-
             alt_value = field.alt_value
             if alt_value is not None:
                 alt_value = Color.color(alt_value, self.colors.alt_value)
-
             alt_unit = field.alt_unit
             if alt_unit is not None:
                 alt_unit = Color.color(alt_unit, self.colors.alt_unit)
-
             alt_value_brackets = field.alt_value_brackets
             if alt_value_brackets is not None:
                 alt_value_brackets = (
                     Color.color(alt_value_brackets[0], self.colors.value_brackets),
                     Color.color(alt_value_brackets[1], self.colors.value_brackets),
                 )
-
             alt_sep = Color.color(field.alt_sep, self.colors.alt_sep)
-
             field = Field(name, value, field.bin_field, unit, value_brackets,
                           sep, alt_name, alt_value, alt_unit, alt_value_brackets,
                           alt_sep, field.virtual, field.fields, field.notes)
-
         return field
 
     def _color_note(self, note: Note) -> Note:
@@ -971,19 +898,15 @@ class FieldFormatter:
             prefix = note.prefix
             if prefix is not None:
                 prefix = Color.color(prefix, self.colors.note_prefix)
-
             sep = Color.color(note.prefix_sep, self.colors.note_sep)
             contents = Color.color(note.contents, self.colors.note_contents)
             note = Note(contents, prefix, sep, note.notes)
-
         return note
 
     def _format_field(self, field: Field, indent: int = 2) -> str:
         lines = []
-
         if self.colorify:
             field = self._color_field(field)
-
         name = field.name
         value = field.value
         is_bit_field = field.bin_field
@@ -998,131 +921,98 @@ class FieldFormatter:
         virtual = field.virtual
         fields = field.fields
         notes = field.notes
-
         if alt_name is not None:
             alt_name = " (%s)" % alt_name
-
         if value_brackets is not None:
             open, close = value_brackets[:2][0], value_brackets[:2][1]
             value = "%s%s%s" % (open, value, close)
-
         if is_bit_field:
             lines.extend([value, sep, name])
-
             if alt_name is not None:
                 lines.append(alt_name)
         else:
             lines.append(name)
-
             if alt_name is not None:
                 lines.append(alt_name)
-
             lines.extend([sep, value])
-
         if unit is not None:
             lines.extend([" ", unit])
-
         if alt_value is not None:
             if alt_unit is not None:
                 alt_value = "%s %s" % (alt_value, alt_unit)
-
             if alt_value_brackets is not None:
                 open, close = alt_value_brackets[:2][0], alt_value_brackets[:2][1]
                 alt_value = "%s%s%s" % (open, alt_value, close)
-
             lines.extend([alt_sep, alt_value])
-
         if fields is not None:
             for f in fields:
                 formatted_field = self._format_field(f, indent + 2)
                 formatted_field = "\n%s" % formatted_field
                 lines.append(formatted_field)
-
         if notes is not None:
             for n in notes:
                 formatted_note = self._format_note(n, indent + 2)
                 formatted_note = "\n%s" % formatted_note
                 lines.append(formatted_note)
-
         formatted_lines = "".join(lines)
         if virtual:
             formatted_lines = "[%s]" % formatted_lines
-
         if virtual:
             indent += 1
-
         result = "%*s%s" % (indent, "", formatted_lines)
-
         return result
 
     def _format_note(self, note: Note, indent: int = 2) -> str:
         lines = []
-
         if self.colorify:
             note = self._color_note(note)
-
         if note.prefix is not None:
             prefix = "%s%s" % (note.prefix, note.prefix_sep)
             lines.append(prefix)
-
         lines.append(note.contents)
-
         if note.notes is not None:
             for n in note.notes:
                 formatted_note = self._format_note(n, indent + 2)
                 formatted_note = "\n%s" % formatted_note
-
                 lines.append(formatted_note)
-
         formatted_lines = " ".join(lines)
         result = "%*s[%s]" % (indent, "", formatted_lines)
-
         return result
 
     def lines(self, *args: str, **kwargs: str) -> str:
         """
         """
         lines = []
-
         if "indent" in kwargs:
             indent = int(kwargs["indent"])
         else:
             indent = 2
-
         if self.brackets is not None:
             open, close = self.brackets[0], self.brackets[1]
-
             if self.colorify:
                 open, close = (Color.color(open, self.colors.value_brackets),
                                Color.color(close, self.colors.value_brackets))
         else:
             open, close = ("",) * 2
-
         if not len(self._fields):
             lines.extend([open, f"{' ' * indent}<{self.EMPTY_PROTO}>", close])
             return "%s %s" % (self.protocol, "\n".join(lines))
-
         for field in self._fields.values():
             formatted_field = self._format_field(field, indent)
             lines.append(formatted_field)
-
         if open and close:
             formatted_lines = "%s\n%s\n%s" % (open, "\n".join(lines), close)
         else:
             formatted_lines = "\n" + "\n".join(lines)
-
         if self.colorify and self.colors is not None:
             self.protocol = Color.color(self.protocol, self.colors.protocol)
-
         if "prefix" not in kwargs:
             prefix = [self.protocol]
-
             if len(args) > 0:
                 for arg in args:
                     try:
                         field = self._fields[arg]
                         f = "%s%s %s" % (arg, ":", field.value)
-
                         prefix.append(f)
                     except KeyError:
                         continue
@@ -1130,9 +1020,7 @@ class FieldFormatter:
             formatted_prefix = ", ".join(prefix)
         else:
             formatted_prefix = kwargs["prefix"]
-
         dump = "%s %s" % (formatted_prefix, formatted_lines)
-
         return dump
 
 
@@ -1288,7 +1176,6 @@ class LiveCapture:
         self.max_files = max_files
         self.max_wfile_len = max_wfile_len
         self.filter = filter
-
         # Time stamp settings
         timestamp_type_map = {
             "host": pcap.PCAP_TSTAMP_HOST,
@@ -1299,40 +1186,31 @@ class LiveCapture:
             "adapter_unsynced": pcap.PCAP_TSTAMP_ADAPTER_UNSYNCED,
         }
         self.timestamp_type = timestamp_type_map[timestamp_type]
-
         timestamp_precision_map = {
             "micro": pcap.PCAP_TSTAMP_PRECISION_MICRO,
             "nano": pcap.PCAP_TSTAMP_PRECISION_NANO,
         }
         self.timestamp_precision = timestamp_precision_map[timestamp_precision]
-
         # Capture handle
         self._lpd: pcap.pcap_t | None = None
-
         # Write handle
         self._lpdd: pcap.pcap_dumper_t | None = None
         self._current_file_number = 0
         self._current_file_size = 0
         if self.wfile:
             self._wfile_path = Path(self.wfile).expanduser().resolve()
-
         # Link type information
         self._llt = -1
         self._lltn = "NONE"
-
         # Capture thread
         self._ct: threading.Thread | None = None
-
         # Captured packets
         self._cp: queue.Queue[CapturedPacketHeader | None] = queue.Queue()
-
         # Function to apply to each packet captured
         self._live_callback: Callable[[CapturedPacketHeader], None] | None = None
-
         # Statistics: packets captured, processed, dropped, dropper by the
         # network interface
         self._live_stats = LiveCaptureStats()
-
         self._status = 0
 
     def _live_open(self) -> pcap.pcap_t:
@@ -1358,30 +1236,24 @@ class LiveCapture:
         device = self.interface.encode("utf-8")
         filter = self.filter
         pd = pcap.create(device, errbuf)
-
         # Couldn't create a capture handle for some reason. Retrieve the error
         # message and raise the error.
         if pd is None:
             message = errbuf.value.decode("utf-8").lower()
             raise LiveCaptureError(f"failed to create a capture handle: {message}")
-
         # Try to set options on the capture handle. If this method fails, the
         # `LiveCaptureError` will be raised with the appropriate message telling
         # us which option couldn't be set and the reason why it could not (I guess).
         self._live_set_capture_options(pd)
-
         # Try to activate the capture handle.
         status = pcap.activate(pd)
-
         # Check if the capture handle has been activated. If the status doesn't
         # indicate success, this will raise the `LiveCaptureError` with the
         # appropriate message telling us what has gone wrong.
         self._live_check_activate_status(status, pd)
-
         # Set filter if provided
         if filter:
             self._live_set_filter(pd)
-
         # At this point everything works fine, the capture handle is open,
         # options are set and filters are applied. We can return the handle
         # to the caller
@@ -1390,19 +1262,15 @@ class LiveCapture:
     def _live_open_new_pcap_file(self) -> None:
         if self.max_files > 0:
             self._current_file_number = self._current_file_number % self.max_files
-
         file = f"{self.wfile}.{self._current_file_number}.pcap"
-
         if Path(file).exists():
             Path(file).unlink()
-
         errbuf = c.create_string_buffer(pcap.PCAP_ERRBUF_SIZE)
         pdd = pcap.dump_open_append(self._lpd, file.encode('utf-8'))
         if pdd is None:
             errmsg = "failed to open pcap write handle for file [%s]:" % file
             errmsg = "%s %s" % (errmsg, pcap.geterr(errbuf))
             raise LiveCaptureError(errmsg)
-
         self._lpdd = pdd
         self._current_file_size = 0
 
@@ -1431,22 +1299,16 @@ class LiveCapture:
             (pcap.set_tstamp_type, self.timestamp_type, "time stamp type"),
             (pcap.set_tstamp_precision, self.timestamp_precision, "time stamp precision"),
         ]
-
         if self.promiscuous:
             options.append((pcap.set_promisc, self.promiscuous, "promiscuous mode"))
-
         if self.monitor and pcap.can_set_rfmon(ch):
             options.append((pcap.set_rfmon, self.monitor, "monitor mode"))
-
         if self.immediate:
             options.append((pcap.set_immediate_mode, self.immediate, "immediate mode"))
-
         for setter, value, description in options:
             status = setter(ch, value)
-
             if status != 0:
                 pcap.close(ch)
-
                 errmsg = "can't set [%s] on [%s] device:" % (description,
                                                              self.interface)
                 errmsg = "%s %s" % (
@@ -1454,14 +1316,11 @@ class LiveCapture:
                     pcap.statustostr(status).decode("utf-8").lower(),
                 )
                 raise LiveCaptureError(errmsg)
-
         if self.nonblock:
             errbuf = c.create_string_buffer(pcap.PCAP_ERRBUF_SIZE)
             status = pcap.setnonblock(ch, self.nonblock, errbuf)
-
             if status != 0:
                 pcap.close(ch)
-
                 errmsg = "can't set nonblock mode on [%s] device:" % self.interface
                 errmsg = "%s %s" % (errmsg, errbuf.value.decode("utf-8").lower())
                 raise LiveCaptureError(errmsg)
@@ -1496,14 +1355,12 @@ class LiveCapture:
                 pcap.PCAP_ERROR_RFMON_NOTSUP: f"device '{self.interface}' does not support monitor mode",
                 pcap.PCAP_ERROR_IFACE_NOT_UP: f"device '{self.interface}' is not up",
             }
-
             # Close the handle and raise the error
             if status in err_map:
                 pcap.close(ch)
                 raise LiveCaptureError(err_map[status])
             else:
                 pcap.close(ch)
-
                 errmsg = pcap.geterr(ch).value.decode("utf-8").lower()
                 raise LiveCaptureError(errmsg)
 
@@ -1529,23 +1386,17 @@ class LiveCapture:
         filter = self.filter.encode("utf-8")
         status = pcap.compile(handle, c.byref(bpf_program), filter, 1,
                               pcap.PCAP_NETMASK_UNKNOWN)
-
         if status != 0:
             pcap.freecode(bpf_program)
-
             errmsg = "failed to compile the filter [%s]:" % filter.decode("utf-8")
             errmsg = "%s %s" % (errmsg, pcap.geterr(handle).decode("utf-8").lower())
             raise LiveCaptureError(errmsg)
-
         status = pcap.setfilter(handle, c.byref(bpf_program))
-
         if status != 0:
             pcap.freecode(bpf_program)
-
             errmsg = "failed to set the filter [%s]:" % filter.decode("utf-8")
             errmsg = "%s %s" % (errmsg, pcap.geterr(handle).decode("utf-8").lower())
             raise LiveCaptureError(errmsg)
-
         pcap.freecode(c.byref(bpf_program))
 
     def _live_process_captured_packet(
@@ -1556,23 +1407,17 @@ class LiveCapture:
     ) -> None:
         # Process a captured packet
         pkthdr = c.cast(header, c.POINTER(pcap.pkthdr)).contents
-
         ts = (pkthdr.ts.tv_sec, pkthdr.ts.tv_usec)
         caplen, length = pkthdr.caplen, pkthdr.len
         pkt = c.string_at(data, caplen)
-
         captured_packet = CapturedPacketHeader(ts, length, pkt, caplen)
-
         # Add packet to the pool
         self._cp.put(captured_packet)
-
         self._live_stats.qcap += 1
         self._live_stats.bcap += caplen
-
         # Write packet to pcap file if wfile is specified
         if self.wfile:
             self._live_write_packet(pkthdr, pkt)
-
         # If there's the callback, call the function
         if self._live_callback is not None:
             self._live_callback(captured_packet)
@@ -1585,15 +1430,11 @@ class LiveCapture:
         data_ptr = c.cast(c.c_char_p(data), c.POINTER(c.c_ubyte))
         # dump takes the write handle as `u_char *`
         pdd_ptr = c.cast(self._lpdd, c.POINTER(c.c_ubyte))
-
         pcap.dump(pdd_ptr, header_ptr, data_ptr)
-
         self._current_file_size += header.caplen + 16
-
         if self.max_wfile_len > 0:
             current_filename = f"{self.wfile}.{self._current_file_number}.pcap"
             self._current_file_size = Path(current_filename).stat().st_size
-
             if self._current_file_size >= self.max_wfile_len * 1024:
                 pcap.dump_close(self._lpdd)
                 self._current_file_number += 1
@@ -1617,7 +1458,6 @@ class LiveCapture:
         s = int(t)
         m = int((t - s) * 1000000)
         self.live_stats.start_time = (s, m)
-
         while True:
             status = pcap.dispatch(
                 self._lpd,
@@ -1625,7 +1465,6 @@ class LiveCapture:
                 pcap.pcap_handler(self._live_process_captured_packet),
                 None,
             )
-
             # Loop break
             if ((status == -2) or (self._status == -2)
                     or (self.count == self._live_stats.qcap)):
@@ -1638,7 +1477,6 @@ class LiveCapture:
                 )
                 pcap.close(self._lpd)
                 raise LiveCaptureError(message)
-
             if self.count == -1 and (self.count == self.live_stats.qcap):
                 self._live_capture_stop()
                 break
@@ -1654,19 +1492,15 @@ class LiveCapture:
             float(f"{self.live_stats.end_time[0]}.{self.live_stats.end_time[1]}")
             - float(f"{self.live_stats.start_time[0]}.{self.live_stats.start_time[1]}")
         )
-
         # Break the loop
         pcap.breakloop(self._lpd)
         self._status = -2
-
         # Dump statistics
         stats = pcap.stat()
         pcap.stats(self._lpd, c.byref(stats))
-
         self._live_stats.cap = stats.ps_recv
         self._live_stats.drop = stats.ps_drop
         self._live_stats.ifdrop = stats.ps_ifdrop
-
         # Close the write handle if packets were being saved to a file
         if self._lpdd:
             pcap.dump_close(self._lpdd)
@@ -1707,10 +1541,8 @@ class LiveCapture:
         linktype_name = pcap.datalink_val_to_name(self._llt)
         if linktype_name is not None:
             self._lltn = f"DLT_{linktype_name.decode('utf-8')}"
-
         # Assign the callback
         self._live_callback = callback
-
         # Start packet capture loop
         if threaded:
             # If done with capture the `stop` method MUST be called
@@ -1851,7 +1683,6 @@ class DeadCapture:
 
         self.file_or_files = [file_or_files] if isinstance(file_or_files, str) else file_or_files
         self.count = count
-
         timestamp_precision_map = {
             "micro": pcap.PCAP_TSTAMP_PRECISION_MICRO,
             "nano": pcap.PCAP_TSTAMP_PRECISION_NANO,
@@ -1860,34 +1691,24 @@ class DeadCapture:
             self.timestamp_precision = timestamp_precision_map[timestamp_precision]
         else:
             self.timestamp_precision = timestamp_precision
-
         self.filter = filter
-
         # Queue of files to process
         self._file_queue = deque(self.file_or_files)
-
         # Current file being processed
         self._current_file: str | None = None
-
         # Link type information
         self._rlt = -1
         self._rltn = "NONE"
-
         # Read handle
         self._rpd: pcap.pcap_t | None = None
-
         # Read thread
         self._rt: threading.Thread | None = None
-
         # Packets read
         self._rp: queue.Queue[CapturedPacketHeader | None] = queue.Queue()
-
         # Function to apply to each packet
         self._dead_callback: Callable[[CapturedPacketHeader], None] | None = None
-
         # Statistics: packets read, bytes read
         self._dead_stats = DeadCaptureStats()
-
         self._status = 0
 
     def __enter__(self) -> DeadCapture:
@@ -1906,13 +1727,10 @@ class DeadCapture:
     def _dead_open_next_file(self) -> pcap.pcap_t | None:
         if not self._file_queue:
             return None
-
         self._current_file = str(Path(self._file_queue.popleft()).expanduser().resolve())
         if not Path(self._current_file).exists():
             raise DeadCaptureError(f"file: {self._current_file} does not exist")
-
         errbuf = c.create_string_buffer(pcap.PCAP_ERRBUF_SIZE)
-
         if self.timestamp_precision is not None:
             pd = pcap.open_offline_with_tstamp_precision(
                 self._current_file.encode("utf-8"),
@@ -1921,22 +1739,17 @@ class DeadCapture:
             )
         else:
             pd = pcap.open_offline(self._current_file.encode("utf-8"), errbuf)
-
         if pd is None:
             message = errbuf.value.decode("utf-8").lower()
             raise DeadCaptureError(f"failed to open pcap file '{self._current_file}': {message}")
-
         # Update link type information for the new file
         self._rlt = pcap.datalink(pd)
-
         linktype_name = pcap.datalink_val_to_name(self._rlt)
         if linktype_name is not None:
             self._rltn = f"DLT_{linktype_name.decode('utf-8')}"
-
         # Set filter if provided
         if self.filter:
             self._dead_set_filter(pd)
-
         return pd
 
     def _dead_set_filter(self, handle: pcap.pcap_t) -> None:
@@ -1944,17 +1757,13 @@ class DeadCapture:
         status = pcap.compile(handle, c.byref(bpf_program),
                               self.filter.encode("utf-8"), 1,
                               pcap.PCAP_NETMASK_UNKNOWN)
-
         if status != 0:
             message = pcap.geterr(handle).decode("utf-8").lower()
             raise DeadCaptureError(f"failed to compile filter: {message}")
-
         status = pcap.setfilter(handle, c.byref(bpf_program))
-
         if status != 0:
             message = pcap.geterr(handle).decode("utf-8").lower()
             raise DeadCaptureError(f"failed to set filter: {message}")
-
         pcap.freecode(c.byref(bpf_program))
 
     def _dead_close(self) -> None:
@@ -1970,19 +1779,14 @@ class DeadCapture:
     ) -> None:
         # Process a read packet
         pkthdr = c.cast(header, c.POINTER(pcap.pkthdr)).contents
-
         ts = (pkthdr.ts.tv_sec, pkthdr.ts.tv_usec)
         caplen, length = pkthdr.caplen, pkthdr.len
         pkt = c.string_at(data, caplen)
-
         cph = CapturedPacketHeader(ts, length, pkt, caplen)
-
         # Add packet to the queue
         self._rp.put(cph)
-
         self._dead_stats.read += 1
         self._dead_stats.readb += caplen
-
         # If there's a callback, call the function
         if self._dead_callback is not None:
             self._dead_callback(cph)
@@ -2006,21 +1810,17 @@ class DeadCapture:
                 if self._rpd is None:
                     # No more files to process
                     break
-
             status = pcap.loop(
                 self._rpd,
                 self.count,
                 pcap.pcap_handler(self._dead_process_read_packet),
                 None)
-
             # Close the current file
             self._dead_close()
-
             # Loop break or error
             if status == -2 or status == -1 or self._status == -2:
                 self._dead_close()
                 break
-
         # End of all files reached
         self._rp.put(None)
 
@@ -2053,7 +1853,6 @@ class DeadCapture:
         None
         """
         self._dead_callback = callback
-
         if threaded:
             self._dead_read_threaded()
         else:
@@ -2162,44 +1961,35 @@ class PacketInfo:
     """
 
     packet_num: int
-
     linktype: int
     linktype_name: str
-
     captured: int
     remaining: int
     dissected: int = 0
-
     next_proto: int | str | None = None
     next_proto_lookup_entry: str | None = None
-
     current_proto: int | str | None = None
     current_proto_layer: Layer | None = None
     current_proto_name: str | None = None
-
     prev_proto: int | str | None = None
     prev_proto_layer: Layer | None = None
     prev_proto_name: str | None = None
-
     dl_src: str | None = None
     dl_dst: str | None = None
-
     net_src: str | None = None
     net_dst: str | None = None
-
     t_src: int | None = None
     t_dst: int | None = None
-
     proto_map: dict[str, FieldFormatter] | None = None
-
     fragmented: bool = False
     defragment: bool = False
     fragment_count: int = 0
-    fragment_pool: queue.Queue[bytes] = field(default_factory=lambda: PacketInfo.init_fragment_pool(), init=False)
-
+    fragment_pool: queue.Queue[bytes] = field(
+        default_factory=lambda: PacketInfo.init_fragment_pool(),
+        init=False,
+    )
     dl_hdr_len: int | None = None
     proto_stack: list[str] | None = None
-
     invalid: bool = False
     invalid_proto_name: str | None = None
     invalid_msg: str | None = None
@@ -2327,20 +2117,19 @@ class Dissect(LiveCapture, DeadCapture):
     ) -> None:
         self.action = action
         self.colorify = colorify
-
         self._colors = FieldFormatterColor()
-
         self._module_handles = self._load_dissector_modules(dissectors_path)
         self._dissect_table = self._create_dissect_table_entries()
-
         self._remove_unnecessary(self._module_handles)
         self._register_dissectors()
-
         # Initialize parents
         # Live
         if self.action == "live":
             if interface is None:
-                raise ValueError("interface must be specified for live captures")
+                raise ValueError("interface must be specified for live captures"
+                                 ", use -i or --interface option with the "
+                                 "appropriate interface name as the argument, "
+                                 "eg. -i eth0 or --interface eth0")
             LiveCapture.__init__(self, interface, count, snapshot_length,
                                  promiscuous, monitor, buffer_timeout,
                                  immediate, buffer_size, timestamp_type,
@@ -2349,7 +2138,12 @@ class Dissect(LiveCapture, DeadCapture):
         # Dead
         else:
             if rfile is None:
-                raise ValueError("read files must be specified for dead captures")
+                raise ValueError("read files must be specified for dead captures"
+                                 ", use -r or --read option with the "
+                                 "appropriate file name as the argument, "
+                                 "eg. -r mypcap.pcap or --read mypcap.pcap. "
+                                 "To read from more than one file seperate file "
+                                 "names using comma, eg. -r mypcap.pcap0,mypcap.pcap1")
             DeadCapture.__init__(self, rfile, count, timestamp_precision, filter)
 
     def _load_dissector_modules(
@@ -2365,43 +2159,34 @@ class Dissect(LiveCapture, DeadCapture):
             for item in path.rglob("*.py"):
                 name = item.name
                 stem = item.stem
-
                 if name in exclude:
                     continue
-
                 handle = load_module(str(item), stem)
                 if handle is None:
                     continue
-
                 handles[stem] = handle
 
         # Load built-in modules
         process_directory(built_in_path)
-
         # Load other supplied to us
         if dissectors_path is not None:
             other_path = Path(dissectors_path).expanduser().resolve()
-
             if other_path.is_dir():
                 process_directory(other_path)
             elif other_path.is_file() and other_path.suffix == ".py":
                 handle = load_module(str(other_path), other_path.stem)
                 if handle is not None:
                     handles[other_path.stem] = handle
-
         return handles
 
     def _create_dissect_table_entries(self) -> dict[str, Any]:
         entries = {}
-
         for handle in self._module_handles.values():
             if not lookup_symbol(handle, "create_dissector_entry"):
                 continue
-
             create_dissector_entry = getattr(handle, "create_dissector_entry")
             entry = create_dissector_entry()
             entries[entry] = {}
-
         return entries
 
     def _create_dissect_entry(
@@ -2425,7 +2210,6 @@ class Dissect(LiveCapture, DeadCapture):
         for name, handle in self._module_handles.items():
             if not lookup_symbol(handle, f"register_dissector_{name}"):
                 continue
-
             register_dissector = getattr(handle, f"register_dissector_{name}")
             try:
                 register_dissector(self._register_dissector)
@@ -2444,10 +2228,8 @@ class Dissect(LiveCapture, DeadCapture):
             self._dissect_table[entry]
         except KeyError:
             return
-
         if id in self._dissect_table[entry]:
             return
-
         di = DissectorInfo(a_name, l_name, entry, id, dissect_routine,
                            dissect_routine.__name__)
         self._dissect_table[entry][a_name] = di
@@ -2464,7 +2246,6 @@ class Dissect(LiveCapture, DeadCapture):
             linktype_name: str,
     ) -> str:
         parts = []
-
         pkti = PacketInfo(
             pkt_num,
             linktype,
@@ -2474,56 +2255,42 @@ class Dissect(LiveCapture, DeadCapture):
             proto_map={},
             proto_stack=[],
         )
-
         pkti.next_proto = linktype
         pkti.next_proto_lookup_entry = "dl.type"
-
         try:
             while pkti.next_proto != -1:
                 have_dissector = False
-
                 if pkti.next_proto_lookup_entry is None:
                     break
-
                 for dissector_info in self._dissect_table[pkti.next_proto_lookup_entry].values():
                     if dissector_info.id == pkti.next_proto:
                         dissector = dissector_info.dissect_routine
-
                         if pkti.defragment:
                             fragments = pkti.get_fragments()
-
                             pkti.fragment_count = len(fragments)
                             pkti.defragment = False
-
                             raw_pkt = b"".join(fragments)
                         else:
                             raw_pkt = buf[pkti.dissected:]
-
                         dump = dissector(pkto, pkti, raw_pkt)
-
                         if pkti.invalid:
                             dump = self._handle_invalid_packet(pkto, pkti,
                                                                timestamp)
                             parts.append(dump)
                             return self._format_packet_dump(parts, pkto, pkti,
                                                             buf, timestamp)
-
                         if (pkti.current_proto_layer != Layer.DATA_LINK
                                 or (pkti.current_proto_layer == Layer.DATA_LINK
                                     and pkto.l2)):
                             parts.append(dump)
-
                         have_dissector = True
                         break
-
                 if not have_dissector:
                     self._handle_no_dissector(pkto, pkti, buf, parts)
                     break
-
         except KeyError:
             if pkti.next_proto is not None or pkti.next_proto != -1:
                 self._handle_no_dissector(pkto, pkti, buf, parts)
-
         dump = self._format_packet_dump(parts, pkto, pkti, buf, timestamp)
         return dump
 
@@ -2534,13 +2301,10 @@ class Dissect(LiveCapture, DeadCapture):
             timestamp: tuple[int, int],
     ) -> str:
         dump = f"{pkti.invalid_msg.upper()}"
-
         if pkti.invalid_proto_name is not None:
             dump = f"[{pkti.invalid_proto_name}, {dump}]"
-
         if self.colorify:
             dump = Color.color(dump, "red highlight")
-
         return dump
 
     def _handle_no_dissector(
@@ -2558,7 +2322,6 @@ class Dissect(LiveCapture, DeadCapture):
             pkti.current_proto_layer = Layer.TRANSPORT
         elif pkti.current_proto_layer == Layer.TRANSPORT:
             pkti.current_proto_layer = Layer.OTHER
-
         if (pkti.current_proto_layer in {2, 3, 4}
                 or (pkti.current_proto_layer >= 5 and pkto.unknown)):
             dissector = self._dissect_table["unknown"]["unknown"].dissect_routine
@@ -2575,12 +2338,10 @@ class Dissect(LiveCapture, DeadCapture):
     ) -> str:
         f = FieldFormatter("Packet")
         f.add_field("packet number", pkti.packet_num)
-
         if self.action == "live":
             f.add_field("interface", self.interface)
         else:
             f.add_field("from", self._current_file)
-
         f.add_field("arrival time (absolute)",
                     (time.strftime("%H:%M:%S", time.localtime(timestamp[0]))
                      + f".{timestamp[1]}"))
@@ -2591,15 +2352,12 @@ class Dissect(LiveCapture, DeadCapture):
                     alt_value=pkti.captured * 8, alt_unit="bits", alt_sep=": ")
         f.add_field("protocol stack", ", ".join(pkti.proto_stack),
                     value_brackets=("[", "]"))
-
         if pkto.verbose:
             parts.insert(0, f.lines())
-
             dump = "\n\n".join(parts)
             dump = indent_lines("\n" + dump, indent=2)
         else:
             dump = ": ".join(parts)
-
         if pkto.dump:
             packet_hexdump = hexdump(buf, indent=2)
             if pkto.verbose:
@@ -2607,28 +2365,22 @@ class Dissect(LiveCapture, DeadCapture):
             if self.colorify:
                 packet_hexdump = Color.color(packet_hexdump, self._colors.alt_value)
             dump = f"{dump}\n{packet_hexdump}"
-
         if pkto.verbose:
             dump = f"{dump}"
-
         if pkto.timestamp:
             t = self._format_timestamp(timestamp)
             dump = f"{t}: {dump}"
-
         if pkto.packet_num:
             packet_num = self._format_packet_num(pkti.packet_num)
             dump = f"{packet_num}. {dump}"
-
         if pkto.verbose:
             max_x = shutil.get_terminal_size().columns
             delim = Assets.HORIZONTAL_LINE * max_x
             if self.colorify:
                 delim = Color.color(delim, self._colors.sep)
             dump = f"\n{delim}{dump}\n{delim}"
-
         if not pkto.verbose and pkto.dump:
             dump = "\n" + dump
-
         return dump
 
     def _format_timestamp(self, timestamp):
@@ -2663,7 +2415,6 @@ class Dissect(LiveCapture, DeadCapture):
             threaded: bool = False,
     ) -> None:
         setattr(self, "pkt_num", 1)
-
         if self.action == "live":
             # Start capture loop
             self.live_capture(callback=lambda cph: self.packet_print(pkto, cph),
@@ -2736,7 +2487,6 @@ class Dissect(LiveCapture, DeadCapture):
 
     def list_dissectors(self) -> list[str]:
         lines = []
-
         for table in self._dissect_table.values():
             for _, dissector_info in table.items():
                 sep = Color.color("+", self._colors.value)
@@ -2747,7 +2497,6 @@ class Dissect(LiveCapture, DeadCapture):
                 id = Color.color(str(dissector_info.id), self._colors.unit)
                 id_hex = Color.color(as_hex(dissector_info.id, 4), self._colors.unit)
                 path = Color.color(dissector_info.dissect_routine.__code__.co_filename, self._colors.note_prefix)
-
                 line = (
                     f"{sep} {abbrev} ({full_name})\n"
                     f"    routine: {dissector}\n"
@@ -2756,7 +2505,6 @@ class Dissect(LiveCapture, DeadCapture):
                     f"    path: {path}\n"
                 )
                 lines.append(line)
-
         return lines
 
 
@@ -3082,36 +2830,29 @@ FLAGS: Final[dict[str, PositionalFlag | OptionFlag | Group]] = {
 def main(args: list[str]) -> None:
     parser = FlagParser(prog="dissect", description="dump traffic on a network")
     parser.add_arguments(FLAGS)
-
     flags = parser.parse_args(args)
-
     # List interfaces and exit
     if flags.list_interfaces:
         colors = FieldFormatterColor()
         interfaces = get_capture_devs()
-
         for num, interface in enumerate(interfaces, start=1):
             interface = Color.color(interface, colors.name)
             num_str = Color.color(str(num), colors.alt_unit)
             output = f"{num_str}. {interface}"
             print(output)
-
         return
-
     # Show dissect table entries and exit
     if flags.show_dissect_table_entries:
         dissect = Dissect("live", "any", dissectors_path=flags.Dflag)
         out = dissect.list_dissect_table_entries()
         print("\n".join(out))
         return
-
     # Show available dissectors and exit
     if flags.show_dissectors:
         dissect = Dissect("live", "any", dissectors_path=flags.Dflag)
         out = dissect.list_dissectors()
         print("\n".join(out))
         return
-
     # Create new dissector template
     if flags.new:
         dump_dissector_template(flags.new, flags.new_path)
@@ -3120,10 +2861,8 @@ def main(args: list[str]) -> None:
                   f"{Color.color(flags.new_path, colors.value)}")
         print(output)
         return
-
     # Set action based on flags
     action: Literal["dead", "live"] = "dead" if flags.rflag else "live"
-
     if action == "live":
         colors = FieldFormatterColor()
         output = "%s: capturing on: %s, snapshot length: %s bytes" % (
@@ -3140,7 +2879,6 @@ def main(args: list[str]) -> None:
             Color.color(str(flags.sflag), colors.alt_unit),
         )
         print(output, end="\n\n")
-
     # Initialize Dissect
     try:
         interface = flags.iflag
@@ -3161,7 +2899,6 @@ def main(args: list[str]) -> None:
         rfile = flags.rflag.split(",") if flags.rflag else None
         capture_filter = flags.filter
         dissectors_path = flags.Dflag
-
         dissect = Dissect(
             action, interface, count, snapshot_length, promiscuous, monitor,
             buffer_timeout, immediate, buffer_size, timestamp_type,
@@ -3169,14 +2906,12 @@ def main(args: list[str]) -> None:
             max_wfile_len, rfile, capture_filter, dissectors_path)
     except Exception as e:
         _error(str(e))
-
     # Set packet options
     pkto = PacketOptions(
         flags.vflag, False, flags.nflag, flags.Xflag, flags.xflag,
         flags.Aflag, flags.aflag, flags.dflag, flags.Sflag,
         False, flags.jflag, flags.eflag
     )
-
     # Process packets
     if not flags.gflag:
         dissect.packet_print_loop(pkto)
@@ -3196,15 +2931,12 @@ def main(args: list[str]) -> None:
                 Color.color(f"{byte_count / 1024:.2f}", colors.alt_value),
                 Color.color(f"{byte_count / (1024 ** 2):.2f}", colors.alt_value),
             )
-
             print(output, end="")
 
         dissect.live_capture(callback=callback)
-
     if action == "live":
         dissect.live_clear()
     else:
         dissect.dead_clear()
-
     print()
     dissect.print_stats()

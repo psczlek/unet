@@ -57,7 +57,6 @@ class IP:
     def __init__(self, buf: bytes) -> None:
         if len(buf) > IP_HDRLEN:
             buf = buf[:IP_HDRLEN]
-
         ip = struct.unpack("!BBHHHBBH4s4s", buf)
         self.ver = ip[0] >> 4
         self.ihl = ip[0] & 0xf
@@ -551,7 +550,6 @@ def _add_ip_opt_type_field(f: FieldFormatter, opt_type: int) -> None:
     copy_flag = (opt_type & 0x80) >> 7
     opt_class = (opt_type & 0x60) >> 5
     opt_num = opt_type & 0x1f
-
     type_field = f.add_field("type", opt_type, alt_value=name)
     type_field.add_field("copy flag", as_bin(copy_flag, 8, 0, 1), bin_field=True,
                          alt_value=f"{_IP_OPT_TYPE_FLAG_MAP[copy_flag]} ({copy_flag})")
@@ -569,22 +567,17 @@ def ip_opt_eol_or_nop_dissect(
         buf: bytes,
 ) -> str:
     opt_type = buf[0]
-
     if len(buf) != 1:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {len(buf)}, MUST BE 1"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", len(buf))
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -595,46 +588,36 @@ def ip_opt_sec_dissect(
 ) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != 11:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE 11"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", len(buf))
-
     # Security
     sss = struct.unpack('!H', buf[2:4])[0]
     sss_field = f.add_field("sss", sss, alt_value=as_bin(sss, 16, 0, 16))
-
     # Compartments
     ccc = struct.unpack('!H', buf[4:6])[0]
     ccc_field = f.add_field("ccc", ccc)
     if not ccc:
         ccc_field.add_note("not compartmented")
-
     # Handling Restrictions
     hhh = struct.unpack('!H', buf[6:8])[0]
     hhh_field = f.add_field("hhh", hhh)
-
     # Transmission Control Code
     tcc = struct.unpack('!3s', buf[8:11])[0]
     tcc_field = f.add_field("tcc", as_hex(int.from_bytes(tcc, 'big'), 6),
                             alt_value=tcc.decode())
-
     sss_field.name = "security"
     ccc_field.name = "compartments"
     hhh_field.name = "handling restrictions"
     tcc_field.name = "transmission control code"
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -646,20 +629,16 @@ def ip_opt_route_dissect(
 ) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != len(buf):
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len} != {len(buf)}"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     ptr = buf[2]
     route_data = buf[3:]
     route_data_len = opt_len - 3
-
     # Length
     if opt_len < 3:
         pkti.invalid = True
@@ -667,35 +646,27 @@ def ip_opt_route_dissect(
         pkti.invalid_msg = (f"IP ROUTE OPTION INVALID LENGTH: {opt_len}, "
                             "MUST BE MINIMUM 3 BYTES")
         return ""
-
     len_field = f.add_field("len", opt_len)
-
     # Pointer
     ptr_field = f.add_field("ptr", ptr)
     if opt_len > 3 and ptr < 4:
         ptr_field.add_note("")
-
     # Route data
     data_field = f.add_field("data", route_data_len, unit="bytes")
     resolved_data = []
-
     if opt_len > 3:
         for off in range(0, route_data_len, 4):
             addr = socket.inet_ntoa(route_data[off:off + 4])
             resolved_data.append(addr)
-
     if pkto.verbose:
         for addr in resolved_data:
             data_field.add_field("address", addr)
-
     len_field.name = "length"
     ptr_field.name = "pointer"
     data_field.name = "route data"
-
     dump = f.line("len", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -709,48 +680,38 @@ _IP_OPT_TS_FLG_MAP = {
 def ip_opt_ts_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != len(buf):
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len} != {len(buf)}"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     ptr = buf[2]
     oflw = (buf[3] & 0xf0) >> 4
     flg = buf[3] & 0x0f
     data = buf[4:]
-
     # Length
     f.add_field("length", opt_len)
-
     # Pointer
     ptr_field = f.add_field("ptr", ptr)
     if ptr > opt_len:
         ptr_field.add_note("timestamp data area full, no timestamp will be inserted")
-
     # Overflow
     oflw_field = f.add_field("oflw", as_bin(oflw, 8, 0, 4), bin_field=True,
                              alt_value=oflw)
-
     # Flag
     flg_field = f.add_field("flg", as_bin(flg, 8, 4, 4), bin_field=True,
                             alt_value=f"{flg} ({_IP_OPT_TS_FLG_MAP[flg]})")
-
     # Data
     data_field = f.add_field("tsdata", len(data), unit="bytes")
     resolved_data = []
-
     if flg == 0:
         for off in range(0, len(data), 4):
             ts = struct.unpack("!L", data[off:off + 4])
             resolved_data.append(ts)
     elif flg in {1, 3}:
         ts_next = False
-
         for off in range(0, len(data), 4):
             if not ts_next:
                 elem = socket.inet_ntoa(data[off:off + 4])
@@ -758,51 +719,40 @@ def ip_opt_ts_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
             else:
                 elem = struct.unpack("!L", data[off:off + 4])[0]
                 ts_next = False
-
             resolved_data.append(elem)
     else:
         data_field.add_note(f"invalid flag value: {flg}")
-
     if pkto.verbose:
         for elem in resolved_data:
             name = "address" if isinstance(elem, str) else "timestamp"
             data_field.add_field(name, elem)
-
     ptr_field.name = "pointer"
     oflw_field.name = "overflow"
     flg_field.name = "flag"
     data_field.name = "timestamp data"
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
 def ip_opt_sid_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != 4:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE 4"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     sid = struct.unpack("!H", buf[2:])[0]
     f.add_field("stream id", as_hex(sid, 4), alt_value=sid, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -813,27 +763,21 @@ def ip_opt_rtralt_dissect(
 ) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != 4:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE 4"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     alert = struct.unpack("!H", buf[2:])[0]
     alert_str = "router shall examine packet" if alert == 0 else "reserved"
     f.add_field("value", alert_str, alt_value=alert, alt_value_brackets=("(", ")"),
                 alt_sep=" ")
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -844,25 +788,19 @@ def ip_opt_mtu_dissect(
 ) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != 4:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE 4"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     mtu = struct.unpack("!H", buf[2:])[0]
     f.add_field("mtu", mtu)
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -873,75 +811,58 @@ def ip_opt_traceroute_dissect(
 ) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != 12:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE 12"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     # ID
     id_value = struct.unpack("!H", buf[2:4])[0]
     f.add_field("id", id_value)
-
     # Outbound Hop Count
     outbound_hop_count = struct.unpack("!H", buf[4:6])[0]
     f.add_field("outbound hop count", outbound_hop_count)
-
     # Return Hop Count
     return_hop_count = struct.unpack("!H", buf[6:8])[0]
     f.add_field("return hop count", return_hop_count)
-
     # Originator IP Address
     originator_ip = socket.inet_ntoa(buf[8:12])
     f.add_field("originator ip address", originator_ip)
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
 def ip_opt_cipso_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len < 6:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE AT LEAST 6"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     # DOI (Domain of Interpretation)
     doi = struct.unpack("!L", buf[2:6])[0]
     f.add_field("doi", doi)
-
     # Process tags
     offset = 6
     while offset < opt_len:
         tag_type = buf[offset]
         tag_len = buf[offset + 1] if offset + 1 < opt_len else 0
-
         if offset + tag_len > opt_len:
             pkti.invalid = True
             pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
             pkti.invalid_msg = f"TAG LENGTH {tag_len} EXCEEDS OPTION LENGTH"
             break
-
         tag_field = f.add_field("tag type", tag_type)
         tag_field.add_field("length", tag_len)
-
         if tag_type == 1:  # Sensitivity Level
             if tag_len >= 3:
                 sens_level = buf[offset + 2]
@@ -971,48 +892,38 @@ def ip_opt_cipso_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> s
                                            as_bin(byte, 8, 0, 8), bin_field=True)
 
         offset += tag_len
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
 def ip_opt_esec_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len < 9:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE AT LEAST 9"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     # Format Identifier
     format_id = buf[2]
     f.add_field("format identifier", format_id)
-
     # Security Level
     sec_level = struct.unpack('!H', buf[3:5])[0]
     f.add_field("security level", sec_level)
-
     # Compartment Bitmap
     compartment_bitmap = struct.unpack('!L', buf[5:9])[0]
     bitmap_field = f.add_field("compartment bitmap",
                                as_bin(compartment_bitmap, 32, 0, 32),
                                bin_field=True)
-
     # Handling Restrictions
     if opt_len >= 11:
         handling_restrictions = struct.unpack('!H', buf[9:11])[0]
         f.add_field("handling restrictions", as_hex(handling_restrictions, 4))
-
     # Release Markings
     if opt_len > 11:
         release_markings = buf[11:opt_len]
@@ -1021,7 +932,6 @@ def ip_opt_esec_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> st
         if pkto.verbose:
             for i, byte in enumerate(release_markings):
                 release_field.add_field(f"byte {i + 1}", as_hex(byte, 2))
-
     # Additional fields based on Format Identifier
     if format_id == 0:
         bitmap_field.add_note("GENSER format")
@@ -1029,41 +939,32 @@ def ip_opt_esec_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> st
         bitmap_field.add_note("SIOP-ESI format")
     else:
         bitmap_field.add_note(f"Unknown format: {format_id}")
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
 def ip_opt_qs_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len != 8:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE 8"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     # Func field (1 byte)
     func = buf[2]
     func_field = f.add_field("func", as_bin(func, 8, 0, 8), bin_field=True)
-
     # Rate field (30 bits)
     rate = struct.unpack("!I", buf[3:7])[0] >> 2
     rate_field = f.add_field("rate", as_bin(rate, 30, 0, 30), bin_field=True)
-
     # TTL field (6 bits)
     ttl = ((buf[6] & 0x03) << 4) | (buf[7] >> 4)
     ttl_field = f.add_field("ttl", as_bin(ttl, 6, 0, 6), bin_field=True)
-
     # Parsing Func field
     func_type = (func & 0xf0) >> 4
     func_type_field = func_field.add_field("type", func_type)
@@ -1073,57 +974,44 @@ def ip_opt_qs_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
         func_type_field.add_note("Rate Report")
     else:
         func_type_field.add_note("Unknown")
-
     func_field.add_field("reserved", as_bin(func & 0x0f, 8, 4, 4), bin_field=True)
-
     # Parsing Rate field
     rate_kbps = rate * 40
     rate_field.add_field("rate", f"{rate_kbps} kbps")
-
     # Parsing TTL field
     ttl_field.add_field("ttl", ttl)
-
     # Check for QS Nonce
     qs_nonce = ((buf[6] & 0x03) << 14) | (buf[7] & 0x0f)
     f.add_field("qs nonce", as_bin(qs_nonce, 16, 0, 16), bin_field=True)
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
 def ip_opt_sdb_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     if opt_len < 2:
         pkti.invalid = True
         pkti.invalid_proto_name = f"IP Option {IP_OPT_MAP[opt_type][1]}"
         pkti.invalid_msg = f"BOGUS LENGTH: {opt_len}, MUST BE AT LEAST 2"
         return ""
-
     f = FieldFormatter(IP_OPT_MAP[opt_type][0])
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len)
-
     addresses = []
     data = buf[2:]
     for off in range(0, len(data), 4):
         addr = socket.inet_ntoa(data[off:off + 4])
         addresses.append(addr)
-
     if pkto.verbose:
         data_field = f.add_field("data", len(addresses) * 4, unit="bytes")
         for addr in addresses:
             data_field.add_field("address", addr)
-
     dump = f.line("length", "bytes")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -1134,16 +1022,12 @@ def ip_opt_unk_dissect(
 ) -> str:
     opt_type = buf[0]
     opt_len = buf[1]
-
     f = FieldFormatter("Unknown IP option")
     _add_ip_opt_type_field(f, opt_type)
-
     f.add_field("length", opt_len, unit="bytes" if len(buf) > 1 else "byte")
-
     dump = f.line("length", "bytes" if len(buf) > 1 else "byte")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -1194,54 +1078,42 @@ def ip_opt_dissect(
 ) -> list[str]:
     results = []
     off = 0
-
     while off < len(buf):
         opt_type = buf[off]
-
         if opt_type not in IPOpt:
             return [f"[IP unknown option type: {opt_type}]"]
-
         if opt_type == IPOpt.EOOL or opt_type == IPOpt.NOP:
             opt_len = 1
         else:
             opt_len = buf[off + 1]
-
         if opt_len < _IP_OPT_MIN_LEN_MAP[opt_type]:
             name = (IP_OPT_MAP[opt_type][0] if not pkto.verbose else
                     f"{IP_OPT_MAP[opt_type][1]} ({IP_OPT_MAP[opt_type][0]})")
             return [f"[IP option: {name} [length too short: {opt_len}]]"]
-
         current_opt = buf[off:off + opt_len]
         try:
             dissected_opt: str = _IP_OPT_DISSECTOR_MAP[opt_type](pkto, pkti, current_opt)
         except KeyError:
             dissected_opt = ip_opt_unk_dissect(pkto, pkti, buf)
-
         if pkti.invalid:
             return []
-
         results.append(dissected_opt)
         off += opt_len
-
     return results
 
 
 def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     protocol = "IP"
     f = FieldFormatter(protocol)
-
     if len(buf) < IP_HDRLEN:
         pkti.invalid = True
         pkti.invalid_proto_name = protocol
         pkti.invalid_msg = "INVALID IP PACKET"
         return ""
-
     ip = IP(buf[:IP_HDRLEN])
-
     ver = ip.ver
     ihl = ip.ihl
     hlen = ihl << 2
-
     if ver != 4:
         if ver == 6:
             from unet.modules.dissect.ip6 import ip6_dissect
@@ -1251,82 +1123,64 @@ def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
             pkti.invalid_proto_name = protocol
             pkti.invalid_msg = f"INVALID VERSION: {ver}"
             return ""
-
     if hlen < IP_HDRLEN:
         pkti.invalid = True
         pkti.invalid_proto_name = protocol
         pkti.invalid_msg = f"INVALID HEADER LENGTH: {hlen} ({ihl})"
         return ""
-
     # Version
     ver_field = f.add_field("ver", as_bin(ver, 8, 0, 4), bin_field=True,
                             sep=" = ", alt_value=ver, alt_sep=": ")
-
     # Header Length
     ihl_field = f.add_field("ihl", as_bin(ihl, 8, 4, 4), bin_field=True,
                             sep=" = ", alt_value=hlen, alt_unit="bytes",
                             alt_sep=": ")
     ihl_field.add_note(str(ihl))
-
     # Differentiated Services
     ds = ip.tos
     dscp = ds >> 2
     ecn = ds & 0x03
-
     ds_field = f.add_field("ds", as_hex(ds, 2))
     dscp_field = ds_field.add_field("differentiated services codepoint",
                                     as_bin(dscp, 8, 0, 6), bin_field=True, sep=" = ",
                                     alt_value=dscp, alt_sep=": ")
-
     set_dscp: list[str] = []
     for val, names in IPDS_DSCP_MAP.items():
         if val == dscp:
             set_dscp.append(names[1])
             break
-
     if dscp != 0 and not len(set_dscp):
         set_dscp.append(f"unknown ({dscp})")
-
     dscp_field.add_note(", ".join(set_dscp))
     ecn_field = ds_field.add_field("explicit congestion notification", as_bin(ecn, 8, 6, 2),
                                    bin_field=True, sep=" = ", alt_value=ecn, alt_sep=": ")
-
     set_ecn: list[str] = []
     for val, names in IPDS_ECN_MAP.items():
         if val == ecn:
             set_ecn.append(names[1])
             break
-
     ecn_field.add_note(", ".join(set_ecn))
-
     # Total Length
     tlen = ip.tlen
     tlen_field = f.add_field("tlen", tlen, unit="bytes")
-
     if tlen < hlen:
         pkti.invalid = True
         pkti.invalid_proto_name = protocol
         pkti.invalid_msg = f"INVALID TOTAL LENGTH: {tlen}, LESS THAN HEADER LENGTH: {hlen}"
         return ""
-
     # Identification
     id = ip.id
     id_field = f.add_field("id", f"{as_hex(id, 4)}", alt_value=id)
-
     # Flags
     flags = ip.flags
     set_flags: list[str] = []
-
     for val, names in IP_FLAGS_MAP.items():
         if flags & val:
             set_flags.append(f"{names[0]}")
-
     if not len(set_flags):
         set_flags.append("none")
-
     flags_field = f.add_field("flags", as_hex(flags, 1), alt_value=", ".join(set_flags),
                               alt_value_brackets=("[", "]"), alt_sep=" ")
-
     flag_bits = [
         (int(bool(flags & IPFlag.EF)), "evil bit", 0),
         (int(bool(flags & IPFlag.DF)), "don't fragment", 1),
@@ -1336,93 +1190,71 @@ def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
         flags_field.add_field(name, as_bin(has, 3, off, 1), bin_field=True,
                               sep=" = ", alt_value="set" if has else "not set",
                               alt_sep=": ")
-
     if flags > IPFlag.DF:
         flags_field.add_note("flags value exceeds usable bound, might be a "
                              "manually crafted packet")
-
     # Fragment offset
     off = ip.off
     off_field = f.add_field("off", as_bin(off, 16, 3, 13), bin_field=True,
                             sep=" = ", alt_value=(off << 3), alt_sep=": ")
-
     if (flags & 0x1) and (not pkti.fragmented):
         pkti.fragmented = True
-
     if pkti.fragmented:
         pkti.add_fragment(buf[hlen:tlen])
         off_field.add_note("fragmented IP datagram")
-
     if (off << 3) > 0 and not (flags & 0x1):
         pkti.fragmented = False
         pkti.defragment = True
-
     # Time to Tive
     ttl = ip.ttl
     ttl_field = f.add_field("ttl", ttl)
     if ttl < 5:
         ttl_field.add_note(f"ttl only {ttl}")
-
     # Protocol
     proto = ip.proto
     try:
         proto_str = IP_PROTO_MAP[proto]
     except KeyError:
         proto_str = "unknown"
-
     proto_field = f.add_field("proto", proto_str, alt_value=proto,
                               alt_value_brackets=("(", ")"), alt_sep=" ")
-
     # Checksum
     chksum = ip.chksum
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf[:hlen])
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
     # Source address
     src = ip.src
     if not pkto.numeric_ip:
         src_numeric = src
         src = addr_to_name(src)
-
     src_field = f.add_field("src", src)
-
     if not pkto.numeric_ip:
         src_field.add_field("numeric", src_numeric, sep=" = ")
-
     # Destination address
     dst = ip.dst
     if not pkto.numeric_ip:
         dst_numeric = dst
         dst = addr_to_name(ip.dst)
-
     dst_field = f.add_field("dst", dst)
-
     if not pkto.numeric_ip:
         dst_field.add_field("numeric", dst_numeric, sep=" = ")
-
     # Options
     opt_buf = buf[IP_HDRLEN:hlen]
     if len(opt_buf):
         if pkto.verbose:
             opt_field = f.add_field("options", len(opt_buf), unit="bytes")
             opts = ip_opt_dissect(pkto, pkti, opt_buf)
-
             if pkti.invalid:
                 return ""
-
             for opt in opts:
                 opt = indent_lines(opt, 6)
                 opt_field.add_field("IP option", "\n" + opt)
@@ -1431,27 +1263,22 @@ def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
             opt_field = f.add_field("options", f"{len(opt_buf)} bytes, [{opts}]")
     else:
         f.add_field("options", "[not set]")
-
     # Hexdump
     if pkto.dump_chunk:
         ip_hexdump = hexdump(buf[:hlen], indent=4)
         f.add_field("hexdump", "\n" + ip_hexdump)
-
     # Update packet info
     pkti.remaining -= hlen if not pkti.fragmented else tlen
     pkti.dissected += hlen if not pkti.fragmented else tlen
-
     if pkti.remaining > 0:
         pkti.next_proto = proto
         pkti.next_proto_lookup_entry = "ip.proto"
     else:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     if pkti.prev_proto == DLT_EN10MB:
         pkti.current_proto = EtherType.IP
     elif pkti.prev_proto == DLT_NULL:
@@ -1460,20 +1287,16 @@ def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
         pkti.current_proto = 0
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = protocol
-
     if pkto.numeric_ip:
         pkti.net_src = src
         pkti.net_dst = dst
     else:
         pkti.net_src = src_numeric
         pkti.net_dst = dst_numeric
-
     assert pkti.proto_map is not None
     assert pkti.proto_stack is not None
-
     pkti.proto_map["ip"] = f
     pkti.proto_stack.append("ip")
-
     # Set more descriptive name for each field
     ver_field.name = "version"
     ihl_field.name = "header length"
@@ -1487,7 +1310,6 @@ def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     chksum_field.name = "checksum"
     src_field.name = "source address"
     dst_field.name = "destination address"
-
     if not pkti.fragmented:
         dump = f.line("src", Assets.RIGHTWARDS_ARROW, "dst", len="tlen",
                       proto="proto", options="options")
@@ -1496,7 +1318,6 @@ def ip_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
                       len="tlen", proto="proto", off=str((off << 3)), id="id")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 

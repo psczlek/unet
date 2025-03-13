@@ -25,7 +25,6 @@ __all__ = [
 
 def _load_oui_lookup_file(path: str) -> dict[str, tuple[str, str]]:
     oui_lookup_table: dict[str, tuple[str, str]] = {}
-
     with Path(path).expanduser().resolve().open("r") as fhandle:
         for line in fhandle:
             parts = line.strip().split("\t")
@@ -35,7 +34,6 @@ def _load_oui_lookup_file(path: str) -> dict[str, tuple[str, str]]:
                 shortened_name = parts[1].strip()
                 full_name = parts[2].strip()
                 oui_lookup_table[oui] = (shortened_name, full_name)
-
     return oui_lookup_table
 
 
@@ -54,7 +52,6 @@ class Eth:
     def __init__(self, buf: bytes) -> None:
         if len(buf) > ETH_HDRLEN:
             buf = buf[:ETH_HDRLEN]
-
         eth = struct.unpack("!6s6sH", buf)
 
         def mac48_str(raw: bytes) -> str:
@@ -386,63 +383,50 @@ ETH_IG_BIT_MAP: Final[dict[int, str]] = {
 def eth_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     protocol = "Eth"
     f = FieldFormatter(protocol)
-
     if len(buf) < ETH_HDRLEN:
         pkti.invalid = True
         pkti.invalid_proto_name = protocol
         pkti.invalid_msg = "INVALID ETH PACKET"
         return ""
-
     eth = Eth(buf[:ETH_HDRLEN])
-
     # Destination
     dst = eth.dst
     if not pkto.numeric_mac:
         dst_numeric = dst
         dst = lookup_oui(dst[:8])[0]
         dst = f"{dst}:{dst_numeric[9:]}"
-
     dst_field = f.add_field("dst", dst)
-
     # LG bit
     dst_lg_bit = (buf[0] & 0b00000010) >> 1
     dst_field.add_field("lg bit", as_bin(dst_lg_bit, 24, 6, 1),
                         alt_value=ETH_LG_BIT_MAP[dst_lg_bit],
                         alt_value_brackets=("(", ")"), alt_sep=" ")
-
     # IG bit
     dst_ig_bit = buf[0] & 0b00000001
     dst_field.add_field("ig bit", as_bin(dst_ig_bit, 24, 7, 1),
                         alt_value=ETH_IG_BIT_MAP[dst_ig_bit],
                         alt_value_brackets=("(", ")"), alt_sep=" ")
-
     if not pkto.numeric_mac:
         dst_field.add_field("numeric", dst_numeric, sep=" = ")
-
     # Source
     src = eth.src
     if not pkto.numeric_mac:
         src_numeric = src
         src = lookup_oui(src[:8])[0]
         src = f"{src}:{src_numeric[9:]}"
-
     src_field = f.add_field("src", src)
-
     # LG bit
     src_lg_bit = (buf[6] & 0b00000010) >> 1
     src_field.add_field("lg bit", as_bin(src_lg_bit, 24, 6, 1),
                         alt_value=ETH_LG_BIT_MAP[src_lg_bit],
                         alt_value_brackets=("(", ")"), alt_sep=" ")
-
     # IG bit
     src_ig_bit = buf[6] & 0b00000001
     src_field.add_field("ig bit", as_bin(src_ig_bit, 24, 7, 1),
                         alt_value=ETH_IG_BIT_MAP[src_ig_bit],
                         alt_value_brackets=("(", ")"), alt_sep=" ")
-
     if not pkto.numeric_mac:
         src_field.add_field("numeric", src_numeric, sep=" = ")
-
     # Type/Length
     type = eth.tl
     try:
@@ -450,48 +434,34 @@ def eth_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     except KeyError:
         type_str = "Unknown"
     f.add_field("type", type_str, alt_value=as_hex(type, 4))
-
-    # Padding
-
     if pkto.dump_chunk:
         eth_hexdump = hexdump(buf[:ETH_HDRLEN], indent=4)
         f.add_field("hexdump", "\n" + eth_hexdump)
-
     # Update packet info
     pkti.remaining -= ETH_HDRLEN
     pkti.dissected += ETH_HDRLEN
-
     if pkti.remaining > 0:
         pkti.next_proto = type
         pkti.next_proto_lookup_entry = "eth.type"
     else:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.current_proto = DLT_EN10MB
     pkti.current_proto_layer = Layer.DATA_LINK
     pkti.current_proto_name = protocol
-
     pkti.dl_src = src
     pkti.dl_dst = dst
-
     assert pkti.proto_map is not None
     assert pkti.proto_stack is not None
-
     pkti.proto_map["eth"] = f
-
     pkti.dl_hdr_len = ETH_HDRLEN
-
     pkti.proto_stack.append("eth")
-
     # Update names
     dst_field.name = "destination mac"
     src_field.name = "source mac"
-
     dump = f.line("src", Assets.RIGHTWARDS_ARROW, "dst", type="type")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 

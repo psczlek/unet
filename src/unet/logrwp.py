@@ -45,30 +45,23 @@ class LogRWP:
         """
         if self._mode != "read":
             return 0
-
         if size < 0:
             return -1
-
         bytes_read = 0
         fpath = self._logdir_path / name
-
         if not fpath.is_file():
             return -1
-
         with fpath.open("r") as f:
             try:
                 while size > 0:
                     chunk = f.read(min(size, 1024))
-
                     if not chunk:
                         break
-
                     buf.extend(chunk.encode())
                     bytes_read += len(chunk)
                     size -= len(chunk)
             except KeyboardInterrupt:
                 f.close()
-
         return bytes_read
 
     def write(self, name: str, msg: str, /) -> int:
@@ -90,15 +83,11 @@ class LogRWP:
         """
         if self._mode != "write":
             return 0
-
         fpath = self._logdir_path / name
-
         if not fpath.is_file():
             return -1
-
         datefmt = datetime.datetime.today().strftime("%Y-%m-%d %I:%M:%S %p")
         fmt = f"[{datefmt}]: {msg}\n"
-
         with fpath.open("a+") as f:
             return f.write(fmt)
 
@@ -117,14 +106,10 @@ class LogRWP:
         """
         if self._mode != "read":
             return
-
         fpath = self._logdir_path / name
-
         if not fpath.is_file():
             return
-
         fsize = fpath.stat().st_size
-
         with fpath.open("r") as f:
             try:
                 while fsize > 0:
@@ -150,18 +135,13 @@ class LogRWP:
         """
         if self._mode != "read":
             return
-
         to_print = []
-
         for f in self._logdir_path.iterdir():
             if not f.is_file():
                 continue
-
             to_print.append(f.name)
-
         if not len(to_print):
             print("there's nothing to print")
-
         if len(to_print) == 1:
             self._pprint(to_print[0])
         else:

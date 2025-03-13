@@ -59,9 +59,7 @@ def get_random_ipv4() -> str:
     class_a = random_class_a()
     class_b = random_class_b()
     class_c = random_class_c()
-
     ip_list = [class_a, class_b, class_c]
-
     return secrets.choice(ip_list)
 
 
@@ -337,7 +335,6 @@ IP_FLAGS: Final = {
 def ip_send(opt: PingOptions, data: bytes | None = None) -> None:
     # Build packet
     ip = IP()
-
     ip.version = opt.ip_ver if opt.ip_ver is not None else 4
     ip.ihl = opt.ip_ihl if opt.ip_ihl is not None else 5
     ip.tos = opt.ip_tos if opt.ip_tos is not None else 0
@@ -350,7 +347,6 @@ def ip_send(opt: PingOptions, data: bytes | None = None) -> None:
     ip.chksum = opt.ip_sum if opt.ip_sum is not None else 0
     ip.src = opt.ip_src if opt.ip_src is not None else if_addr(opt.interface, "inet")
     ip.dst = opt.ip_dst
-
     # Add options
     if opt.ip_opt is not None:
         ip_opt_map = {
@@ -408,25 +404,18 @@ def ip_send(opt: PingOptions, data: bytes | None = None) -> None:
                 dst_ext=opt.ip_opt_aext_dst,
             ),
         }
-
         data_len = len(data) if data is not None else 0
         ip_len_without_data = ip.len - data_len
-
         for name in opt.ip_opt:
             name = name.lower()
-
             if name not in ip_opt_map:
                 continue
-
             ip_opt = ip_opt_map[name]
             next_len = ip_len_without_data + len(ip_opt)
-
             if next_len >= 60:
                 break
-
             ip = ip / ip_opt
             ip_len_without_data += len(ip_opt)
-
         if (ip_len_without_data & 3) != 0:
             while (ip_len_without_data & 3) != 0:
                 next_len = ip_len_without_data + 1
@@ -434,34 +423,27 @@ def ip_send(opt: PingOptions, data: bytes | None = None) -> None:
                     ip = ip / ip_opt_map["eol"]
                     ip_len_without_data += 1
                     break
-
                 ip = ip / ip_opt_map["nop"]
                 ip_len_without_data += 1
-
         if opt.ip_ihl is None:
             ip.ihl = ip_len_without_data >> 2
         if opt.ip_len is None:
             ip.len = ip_len_without_data + data_len
-
     if opt.ip_sum is None:
         chksum = checksum(raw(ip))
         ip.chksum = chksum
-
     # Add data
     if data is not None:
         # Upper layer packet or payload
         ip = ip / Raw(data)
-
     # Fragment if needed
     if len(ip) > opt.mtu:
         if opt.ip_flags is None:
             ip.flags = 0
-
         fragsize = opt.mtu - (len(ip) - (len(data) if data is not None else 0))
         fragments = fragment(ip, fragsize)
     else:
         fragments = ip
-
     # Send packet
     send(fragments, count=1, inter=0, verbose=False)
     time.sleep(opt.delay)

@@ -91,46 +91,35 @@ def icmp_echo_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Code
     code = buf[1]
     f.add_field("code", code)
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Identifier
     id = struct.unpack("!H", buf[4:6])[0]
     id_field = f.add_field("id", id, alt_value=as_hex(id, 4), alt_sep=" ",
                            alt_value_brackets=("(", ")"))
-
     # Sequence number
     seq = struct.unpack("!H", buf[6:8])[0]
     seq_field = f.add_field("seq", seq, alt_value=as_hex(seq, 4), alt_sep=" ",
                             alt_value_brackets=("(", ")"))
-
     # Data
     data_len = len(buf) - ICMP_HDRMINLEN
     if data_len > 0:
@@ -138,46 +127,35 @@ def icmp_echo_dissect(
         data_field.add_field(
             "data", (hexstr(buf[ICMP_HDRMINLEN:], 40)
                      + ("..." if data_len > 40 else "")))
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     if pkto.dump_chunk:
         icmp_hexdump = hexdump(buf, indent=4)
         f.add_field("hexdump", "\n" + icmp_hexdump)
-
     # Update packet info
     pkti.remaining -= ICMP_HDRMINLEN + (len(buf) - ICMP_HDRMINLEN)
     pkti.dissected += ICMP_HDRMINLEN + (len(buf) - ICMP_HDRMINLEN)
-
     pkti.next_proto = -1
     pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update field names
     chksum_field.name = "checksum"
     id_field.name = "identifier"
     seq_field.name = "sequence number"
-
     dump_line_kwargs = {}
     if data_len > 0:
         dump_line_kwargs["data"] = "data"
-
     dump = f.line("type", id="id", seq="seq", **dump_line_kwargs)
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -197,12 +175,10 @@ def icmp_unreach_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Code
     code = buf[1]
     code_map = {
@@ -223,35 +199,26 @@ def icmp_unreach_dissect(
         14: "host precedence violation",
         15: "precedence cutoff in effect",
     }
-
     try:
         code_str = code_map[code]
     except KeyError:
         code_str = "unknown"
-
     f.add_field("code", code_str, alt_value=code, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Unused
     if code != 4:
         unused = struct.unpack("!L", buf[4:8])[0]
@@ -264,25 +231,20 @@ def icmp_unreach_dissect(
 
         mtu = struct.unpack("!H", buf[6:8])[0]
         f.add_field("mtu", mtu)
-
     # Info
     info = f"{ICMP_TYPE_MAP[type][1]} ({code_map[code]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMP_HDRMINLEN
     if data_len > 0:
         f.add_field("IP + original datagram", data_len, unit="bytes",
                     virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMP_HDRMINLEN
     pkti.dissected += ICMP_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -292,28 +254,21 @@ def icmp_unreach_dissect(
     else:
         pkti.remaining -= len(buf) - ICMP_HDRMINLEN
         pkti.dissected += len(buf) - ICMP_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update names
     chksum_field.name = "checksum"
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -333,70 +288,54 @@ def icmp_timexceeded_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Code
     code = buf[1]
     code_map = {
         0: "time to live exceeded in transit",
         1: "net unreachable",
     }
-
     try:
         code_str = code_map[code]
     except KeyError:
         code_str = "unknown"
-
     f.add_field("code", code_str, alt_value=code, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Unused
     unused = struct.unpack("!L", buf[4:8])[0]
     f.add_field("unused", as_hex(unused, 8), alt_value=unused, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Info
     info = f"{ICMP_TYPE_MAP[type][1]} ({code_map[code]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMP_HDRMINLEN
     if data_len > 0:
         f.add_field("IP + original datagram", data_len, unit="bytes",
                     virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMP_HDRMINLEN
     pkti.dissected += ICMP_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -406,28 +345,21 @@ def icmp_timexceeded_dissect(
     else:
         pkti.remaining -= len(buf) - ICMP_HDRMINLEN
         pkti.dissected += len(buf) - ICMP_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update names
     chksum_field.name = "checksum"
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -447,12 +379,10 @@ def icmp_param_problem_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Code
     code = buf[1]
     code_map = {
@@ -460,61 +390,46 @@ def icmp_param_problem_dissect(
         1: "missing a required option",
         2: "bad length"
     }
-
     try:
         code_str = code_map[code]
     except KeyError:
         code_str = "unknown"
-
     f.add_field("code", code_str, alt_value=code, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Unused
     unused = struct.unpack("!L", buf[4:8])[0]
     pointer = (unused & 0xf0000000) >> 28
-
     f.add_field("pointer", pointer)
     f.add_field("unused", as_hex(unused, 8), alt_value=unused, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Info
     info = f"{ICMP_TYPE_MAP[type][1]} ({code_map[code]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMP_HDRMINLEN
     if data_len > 0:
         f.add_field("IP + original datagram", data_len, unit="bytes",
                     virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMP_HDRMINLEN
     pkti.dissected += ICMP_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -524,28 +439,21 @@ def icmp_param_problem_dissect(
     else:
         pkti.remaining -= len(buf) - ICMP_HDRMINLEN
         pkti.dissected += len(buf) - ICMP_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update names
     chksum_field.name = "checksum"
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -565,60 +473,46 @@ def icmp_srcqnch_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     type_field = f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type,
                              alt_sep=" ", alt_value_brackets=("(", ")"))
     _icmp_mark_as_deprecated(f, type_field)
-
     # Code
     code = buf[1]
     f.add_field("code", code)
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Unused
     unused = struct.unpack("!L", buf[4:8])[0]
     f.add_field("unused", as_hex(unused, 8), alt_value=unused, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Info
     info = f"{ICMP_TYPE_MAP[type][1]} ({code})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMP_HDRMINLEN
     if data_len > 0:
         f.add_field("IP + original datagram", data_len, unit="bytes",
                     virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMP_HDRMINLEN
     pkti.dissected += ICMP_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -628,28 +522,21 @@ def icmp_srcqnch_dissect(
     else:
         pkti.remaining -= len(buf) - ICMP_HDRMINLEN
         pkti.dissected += len(buf) - ICMP_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update names
     chksum_field.name = "checksum"
-
     dump = f.line("info", "deprecated")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -669,12 +556,10 @@ def icmp_redirect_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Code
     code = buf[1]
     code_map = {
@@ -683,57 +568,43 @@ def icmp_redirect_dissect(
         2: "redirect datagram for the type of service and network",
         3: "redirect datagram for the type of service and host",
     }
-
     try:
         code_str = code_map[code]
     except KeyError:
         code_str = "unknown"
-
     f.add_field("code", code_str, alt_value=code, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Unused
     gateway = struct.unpack("!L", buf[4:8])[0]
     f.add_field("gateway", str(ipaddress.ip_address(gateway)))
-
     # Info
     info = f"{ICMP_TYPE_MAP[type][1]} ({code_map[code]})"
     f.add_field("info", info, virtual=True)
-
     # Data
     data_len = len(buf) - ICMP_HDRMINLEN
     if data_len > 0:
         f.add_field("IP + original datagram", data_len, unit="bytes",
                     virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= ICMP_HDRMINLEN
     pkti.dissected += ICMP_HDRMINLEN
-
     if not data_len:
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
@@ -743,28 +614,21 @@ def icmp_redirect_dissect(
     else:
         pkti.remaining -= len(buf) - ICMP_HDRMINLEN
         pkti.dissected += len(buf) - ICMP_HDRMINLEN
-
         pkti.next_proto = -1
         pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update names
     chksum_field.name = "checksum"
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -784,80 +648,60 @@ def icmp_timestamp_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Code
     code = buf[1]
     f.add_field("code", code)
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Identifier
     id = struct.unpack("!H", buf[4:6])[0]
     id_field = f.add_field("id", id, alt_value=as_hex(id, 4), alt_sep=" ",
                            alt_value_brackets=("(", ")"))
-
     # Sequence number
     seq = struct.unpack("!H", buf[6:8])[0]
     seq_field = f.add_field("seq", seq, alt_value=as_hex(seq, 4), alt_sep=" ",
                             alt_value_brackets=("(", ")"))
-
     # Originate Timestamp
     ots = struct.unpack("!L", buf[8:12])[0]
     ots_field = f.add_field("ots", ots)
-
     # Receive Timestamp
     rts = struct.unpack("!L", buf[12:16])[0]
     rts_field = f.add_field("rts", rts)
-
     # Transmit Timestamp
     tts = struct.unpack("!L", buf[16:20])[0]
     tts_field = f.add_field("tts", tts)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= len(buf)
     pkti.dissected += len(buf)
-
     pkti.next_proto = -1
     pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update field names
     chksum_field.name = "checksum"
     id_field.name = "identifier"
@@ -865,11 +709,9 @@ def icmp_timestamp_dissect(
     ots_field.name = "originate timestamp"
     rts_field.name = "receive timestamp"
     tts_field.name = "transmit timestamp"
-
     dump = f.line("type", id="id", seq="seq")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -889,78 +731,59 @@ def icmp_inf_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     type_field = f.add_field("type", ICMP_TYPE_MAP[type][1], alt_value=type,
                              alt_sep=" ", alt_value_brackets=("(", ")"))
     _icmp_mark_as_deprecated(f, type_field)
-
     # Code
     code = buf[1]
     f.add_field("code", code)
-
     # Checksum
     chksum = struct.unpack("!H", buf[2:4])[0]
     chksum_field = f.add_field("chksum", as_hex(chksum, 4))
-
     if pkto.check_checksum:
         from unet.modules.dissect.in_chksum import (in_chksum,
                                                     in_chksum_shouldbe)
-
         computed_chksum = in_chksum(buf)
         shouldbe = in_chksum_shouldbe(chksum, computed_chksum)
         is_ok = (shouldbe == chksum)
         status = "correct" if is_ok else "incorrect"
-
         chksum_field.add_note(status)
-
         if not is_ok:
             chksum_field.add_note(f"should be: {as_hex(shouldbe, 4)}")
-
         chksum_field.add_note(f"calculated checksum: {as_hex(shouldbe, 4)}")
-
     # Identifier
     id = struct.unpack("!H", buf[4:6])[0]
     id_field = f.add_field("id", id, alt_value=as_hex(id, 4), alt_sep=" ",
                            alt_value_brackets=("(", ")"))
-
     # Sequence number
     seq = struct.unpack("!H", buf[6:8])[0]
     seq_field = f.add_field("seq", seq, alt_value=as_hex(seq, 4), alt_sep=" ",
                             alt_value_brackets=("(", ")"))
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= len(buf)
     pkti.dissected += len(buf)
-
     pkti.next_proto = -1
     pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     # Update field names
     chksum_field.name = "checksum"
     id_field.name = "identifier"
     seq_field.name = "sequence number"
-
     dump = f.line("type", "deprecated", id="id", seq="seq")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
@@ -980,60 +803,47 @@ def icmp_unk_dissect(
         pkti.invalid_proto_name = f.protocol
         pkti.invalid_msg = f"length too short: {len(buf)}, must be at least {ICMP_HDRMINLEN}"
         return None
-
     # Type
     type = buf[0]
     f.add_field("type", "unknown", alt_value=type, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Code
     code = buf[1]
     f.add_field("code", "unknown", alt_value=code, alt_sep=" ",
                 alt_value_brackets=("(", ")"))
-
     # Info
     info = f"unknown ICMP type: type={type}, code={code}"
     f.add_field("info", info, virtual=True)
-
     if pkti.fragment_count > 0:
         f.add_field("reassembled", pkti.fragment_count, unit="fragments",
                     virtual=True)
-
     # Update packet info
     pkti.remaining -= len(buf)
     pkti.dissected += len(buf)
-
     pkti.next_proto = -1
     pkti.next_proto_lookup_entry = None
-
     pkti.prev_proto = pkti.current_proto
     pkti.prev_proto_layer = pkti.current_proto_layer
     pkti.prev_proto_name = pkti.current_proto_name
-
     pkti.current_proto = 1
     pkti.current_proto_layer = Layer.NETWORK
     pkti.current_proto_name = f.protocol
-
     assert pkti.proto_stack is not None
     pkti.proto_stack.append("icmp")
-
     dump = f.line("info")
     if pkto.verbose:
         dump = f.lines(prefix=dump)
-
     return dump
 
 
 def icmp_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
     protocol = "ICMP"
     f = FieldFormatter(protocol)
-
     if len(buf) < ICMP_HDRMINLEN:
         pkti.invalid = True
         pkti.invalid_proto_name = protocol
         pkti.invalid_msg = "INVALID ICMP PACKET"
         return ""
-
     icmp_dissect_map: dict[int, Callable[[PacketOptions, PacketInfo, bytes, FieldFormatter], str | None]] = {
         ICMPType.ECHO_REPLY: icmp_echo_dissect,
         ICMPType.ECHO: icmp_echo_dissect,
@@ -1047,21 +857,16 @@ def icmp_dissect(pkto: PacketOptions, pkti: PacketInfo, buf: bytes) -> str:
         ICMPType.INF_REQUEST: icmp_inf_dissect,
         ICMPType.INF_REPLY: icmp_inf_dissect,
     }
-
     type = buf[0]
-
     try:
         dissector = icmp_dissect_map[type]
     except KeyError:
         dissector = icmp_unk_dissect
-
     assert pkti.proto_map is not None
     pkti.proto_map["icmp"] = f
-
     dump = dissector(pkto, pkti, buf, f)
     if dump is None:
         return ""
-
     return dump
 
 
