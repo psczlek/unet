@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 75.6.0"]
+requires = ["setuptools >= 76.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -22,8 +22,8 @@ maintainers = [
 dependencies = [
     "scapy>=2.6.1",
     "GitPython>=3.1.43",
-    "psutil>=6.1.0",
-    "libpcap>=1.11.0b14"
+    "psutil>=7.0.0",
+    "libpcap>=1.11.0b16"
 ]
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">= 3.12"
