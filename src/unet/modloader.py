@@ -23,7 +23,7 @@ sys.dont_write_bytecode = True
 
 def lookup_symbol(module: ModuleType, symbol_name: str) -> bool:
     """
-    Check if a symbol in a module matches the expected signature.
+    Check if a module contains a symbol.
 
     Parameters
     ----------
@@ -31,13 +31,11 @@ def lookup_symbol(module: ModuleType, symbol_name: str) -> bool:
         Module to look up the symbol in.
     symbol_name : str
         Name of the symbol to check.
-    signature : str
-        Expected signature of the symbol.
 
     Returns
     -------
     bool
-        True if the symbol exists and its signature matches, False otherwise.
+        True if the symbol exists within the module, False otherwise.
     """
     return hasattr(module, symbol_name)
 
@@ -106,7 +104,7 @@ def is_package(module: ModuleType) -> bool:
     Returns
     -------
     bool
-        True is the modules is a package. Otherwise returns False.
+        True is the modules is a package. Otherwise, returns False.
     """
     # `__path__` attribute is only present when a module is a package
     #
