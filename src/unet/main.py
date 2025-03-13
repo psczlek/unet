@@ -11,15 +11,9 @@ from unet.printing import Assets, eprint
 __all__ = ["main"]
 
 
-<<<<<<< Updated upstream
-_NAME: Final = "unet (dev)"
-_VERSION: Final = "1.0.0"
-_RELEASE_DATE: Final = "2024-10-08"
-=======
 _NAME: Final = "unet (prototype)"
 _VERSION: Final = "0.0.1"
 _RELEASE_DATE: Final = "2025-03-13"
->>>>>>> Stashed changes
 
 
 def _error(message: str) -> None:
