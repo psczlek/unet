@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unet"
-version = "1.0.0"
-description = "unified network toolkit"
+version = "0.0.1"
+description = "unified network toolkit (prototype)"
 license = {text = "BSD-3-Clause"}
 authors = [
     {name = "Cyprian Czaja"},
