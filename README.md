@@ -1,4 +1,9 @@
-# UNET (The Unified Network Toolkit)
+# UNET (The Unified Network Toolkit) Prototype
+
+This project is a working prototype and does not guarantee stability,
+completeness, or backward compatibility. It is subject to frequent changes, and
+functionality may break between prototype versions. Features may be added, removed,
+or modified.
 
 ## Platforms
 
