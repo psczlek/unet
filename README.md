@@ -17,6 +17,21 @@ And is regularly tested on:
 
 *This project works with Python 3.12+ on macOS and Linux.*
 
+### Step 0: (Optional) Install via script file
+
+To install app just with a few clicks and skip Step 1 - 5
+
+Open terminal and in project folder run:
+    ```bash
+    source install-app.sh -i
+    ```
+
+To see all possibilities of script run :
+    ```bash
+    source install-app.sh -h
+    ```
+
+
 ### Step 1: (Optional) Set up a Virtual Environment
 
 To keep the project dependencies isolated from your global Python environment,
