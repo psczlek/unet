@@ -22,14 +22,14 @@ And is regularly tested on:
 To install app just with a few clicks and skip Step 1 - 5
 
 Open terminal and in project folder run:
-    ```bash
-    source install-app.sh -i
-    ```
+```bash
+source install-app.sh -i
+```
 
 To see all possibilities of script run :
-    ```bash
-    source install-app.sh -h
-    ```
+```bash
+source install-app.sh -h
+```
 
 
 ### Step 1: (Optional) Set up a Virtual Environment
