@@ -7,17 +7,11 @@ print_progress() {
     printf "\r\x1b[0;92m[%3d%%]\x1b[0m \x1b[0;93m%d/%d %s\x1b[0m\n" "$percent" "$step" "$total_steps" "$3"
 }
 
-
-
-
-OPTIONS=$(getopt -o hvdi -l help,virtual,dev,install -- "$@")
-
 if [ $? -ne 0 ]; then
   printf "Use -h to see help menu"
   return
 fi
 
-eval set -- $OPTIONS
 
 HELP=0
 VIRTUAL=0
@@ -26,16 +20,14 @@ INSTALL=0
 ITER=0
 TIMES=4
 
-while true; do
-  case "$1" in
-    -h|--help) HELP=1 ;;
-    -v|--virtual) VIRTUAL=1; TIMES=$(($TIMES+1)) ;;
-    -d|--dev)  DEV=1; TIMES=$(($TIMES+1)) ;;
-    -i|--install)  INSTALL=1 ;;
-    --)        shift ; break ;;
-    *)         printf "\x1b[0;91merror:\x1b[0m unknown option: $1" ; return ;;
+while getopts ":hvdi" opt; do
+    case "${opt}" in
+      h) HELP=1 ;;
+      v) VIRTUAL=1; TIMES=$((TIMES+1)) ;;
+      d) DEV=1; TIMES=$((TIMES+1)) ;;
+      i) INSTALL=1 ;;
+      ?) printf "\x1b[0;91merror:\x1b[0m use -h to see help menu\n" ; return ;;
   esac
-  shift
 done
 
 if [ $# -ne 0 ]; then
