@@ -1,5 +1,12 @@
 #!/bin/bash
 
+exit_program() {
+  if [ "$0" = "$BASH_SOURCE" ]; then
+    exit 0
+  fi
+  return
+}
+
 print_progress() {
     local step=$1
     local total_steps=$2
@@ -7,40 +14,45 @@ print_progress() {
     printf "\r\x1b[0;92m[%3d%%]\x1b[0m \x1b[0;93m%d/%d %s\x1b[0m\n" "$percent" "$step" "$total_steps" "$3"
 }
 
-if [ $? -ne 0 ]; then
-  printf "Use -h to see help menu"
-  return
-fi
+OPTIONS=$(getopt :hvdi "$*")
+ 
+#  if [ $? -ne 0 ]; then
+#    echo "Use -h to see help menu"
+#    return
+#  fi
+ 
+ eval set -- $OPTIONS
 
-
-HELP=0
-VIRTUAL=0
-DEV=0
-INSTALL=0
-ITER=0
-TIMES=4
-
-while getopts ":hvdi" opt; do
-    case "${opt}" in
-      h) HELP=1 ;;
-      v) VIRTUAL=1; TIMES=$((TIMES+1)) ;;
-      d) DEV=1; TIMES=$((TIMES+1)) ;;
-      i) INSTALL=1 ;;
-      ?) printf "\x1b[0;91merror:\x1b[0m use -h to see help menu\n" ; return ;;
-  esac
-done
+ HELP=0
+ VIRTUAL=0
+ DEV=0
+ INSTALL=0
+ ITER=0
+ TIMES=4
+ 
+ while true; do
+   case "$1" in
+     -h) HELP=1 ;;
+     -v) VIRTUAL=1; TIMES=$(($TIMES+1)) ;;
+     -d)  DEV=1; TIMES=$(($TIMES+1)) ;;
+     -i)  INSTALL=1 ;;
+     --)  shift ; break ;;
+     ?)   echo "\033[91merror:\033[0m unknown option: $1" ; exit_program ;;
+   esac
+   shift
+ done
 
 if [ $# -ne 0 ]; then
-  printf "\x1b[0;91merror:\x1b[0m unknown option(s): $@"
+  printf "\x1b[0;91merror:\x1b[0m unknown option(s): $*"
   return
 fi
 
 if [ $HELP -eq 1 ]; then
-    printf '\x1b[1;94m-h,  --help\x1b[0m\tsee this message'
-    printf '\x1b[1;94m-v,  --virtual\x1b[0m\tuse virtual environment(default: global)'
-    printf '\x1b[1;94m-d,  --dev\x1b[0m\tuse developing tools'
-    printf '\x1b[1;94m-i,  --install\x1b[0m\tinstall app'
-    return
+    printf '\x1b[1;94m-h,  --help\x1b[0m\tsee this message\n'
+    printf '\x1b[1;94m-v,  --virtual\x1b[0m\tuse virtual environment(default: global)\n'
+    printf '\x1b[1;94m-d,  --dev\x1b[0m\tuse developing tools\n'
+    printf '\x1b[1;94m-i,  --install\x1b[0m\tinstall app\n'
+    exit_program
 fi
 
 if [ $INSTALL -eq 1 ]; then
@@ -52,7 +64,7 @@ if [ $INSTALL -eq 1 ]; then
     python3 -m pip -h > /dev/null
     if [ $? -ne 0 ]; then
         printf -e "\n\x1b[0;91merror:\x1b[0m python3 -m pip: pip module not installed. To proceed with installation please install the pip module\n"
-        return
+        exit_program
     fi
     if [ $VIRTUAL -eq 1 ]; then
         #
@@ -63,7 +75,7 @@ if [ $INSTALL -eq 1 ]; then
         python3 -m venv -h > /dev/null
         if [ $? -ne 0 ]; then
             printf -e "\n\x1b[0;91merror:\x1b[0m python3 -m venv: venv module not installed. To proceed with installation please install the venv module\n"
-            return
+            exit_program
         fi
         
         print_progress $ITER $TIMES "Creating virtual environment"
@@ -96,7 +108,4 @@ if [ $INSTALL -eq 1 ]; then
       python3 -m pip install . > /dev/null
     fi
     printf '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mApp has been installed\x1b[0m\n'
-    print_progress $ITER $TIMES "Checking for unet version"
-    # Show unet's version
-    unet --version
 fi
