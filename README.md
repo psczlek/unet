@@ -17,6 +17,31 @@ And is regularly tested on:
 
 *This project works with Python 3.12+ on macOS and Linux.*
 
+### Step 0: (Optional) Install via script file
+
+To install the application quickly and skip steps 1–5, open a terminal, navigate to the project folder, and run:
+1. Using `source`:
+    ```bash
+    source install.sh -i
+    #If installing into virtual environment use -v flag
+    unet -h
+    ```
+2. Without using source:
+   ```bash
+   chmod +x install.sh
+   ./install.sh -i
+   #If installing into virtual environment use -v flag
+   #And source into virtual environment using:
+   #source ~/.virtualenv/unet/bin/activate
+   unet -h
+   ```
+
+The default behavior is to install the app for the global Python installation. Before performing any actions please refer to the help menu:
+```bash
+source install.sh -h
+```
+
+
 ### Step 1: (Optional) Set up a Virtual Environment
 
 To keep the project dependencies isolated from your global Python environment,
