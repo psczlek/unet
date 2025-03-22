@@ -13,7 +13,7 @@ print_progress() {
 OPTIONS=$(getopt -o hvdi -l help,virtual,dev,install -- "$@")
 
 if [ $? -ne 0 ]; then
-  echo "Use -h to see help menu"
+  printf "Use -h to see help menu"
   return
 fi
 
@@ -33,21 +33,21 @@ while true; do
     -d|--dev)  DEV=1; TIMES=$(($TIMES+1)) ;;
     -i|--install)  INSTALL=1 ;;
     --)        shift ; break ;;
-    *)         echo "\x1b[0;91merror:\x1b[0m unknown option: $1" ; return ;;
+    *)         printf "\x1b[0;91merror:\x1b[0m unknown option: $1" ; return ;;
   esac
   shift
 done
 
 if [ $# -ne 0 ]; then
-  echo "\x1b[0;91merror:\x1b[0m unknown option(s): $@"
+  printf "\x1b[0;91merror:\x1b[0m unknown option(s): $@"
   return
 fi
 
 if [ $HELP -eq 1 ]; then
-    echo '\x1b[1;94m-h,  --help\x1b[0m\tsee this message'
-    echo '\x1b[1;94m-v,  --virtual\x1b[0m\tuse virtual environment(default: global)'
-    echo '\x1b[1;94m-d,  --dev\x1b[0m\tuse developing tools'
-    echo '\x1b[1;94m-i,  --install\x1b[0m\tinstall app'
+    printf '\x1b[1;94m-h,  --help\x1b[0m\tsee this message'
+    printf '\x1b[1;94m-v,  --virtual\x1b[0m\tuse virtual environment(default: global)'
+    printf '\x1b[1;94m-d,  --dev\x1b[0m\tuse developing tools'
+    printf '\x1b[1;94m-i,  --install\x1b[0m\tinstall app'
     return
 fi
 
@@ -77,33 +77,33 @@ if [ $INSTALL -eq 1 ]; then
         print_progress $ITER $TIMES "Creating virtual environment"
         ITER=$(($ITER+1))
         # create virtual environment
-        python3 -m venv ~/.virtualenv/unet
+        python3 -m venv ~/.virtualenv/unet > /dev/null
         # activate virtual environment
-        source ~/.virtualenv/unet/bin/activate
-        echo '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mDedicated virtual environment has been created at:\x1b[0m \x1b[0;92m~/.virtualenv/unet\x1b[0m\n'
+        source ~/.virtualenv/unet/bin/activate > /dev/null
+        printf '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mDedicated virtual environment has been created at:\x1b[0m \x1b[0;92m~/.virtualenv/unet\x1b[0m\n'
     fi
     print_progress $ITER $TIMES "Installing all dependencies"
     ITER=$(($ITER+1))
     # isntall all dependencies
-    python3 -m pip install -r requirements.txt
-    echo '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mAll app dependencies has been installed\x1b[0m\n'
+    python3 -m pip install -r requirements.txt > /dev/null
+    printf '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mAll app dependencies has been installed\x1b[0m\n'
     if [ $DEV -eq 1 ]; then
       print_progress $ITER $TIMES "Installing dev dependencies"
       ITER=$(($ITER+1))
       # isntall dev dependencies
-      python3 -m pip install -r requirements_dev.txt
-      echo '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mDeveloping dependencies has been installed\x1b[0m\n'
+      python3 -m pip install -r requirements_dev.txt > /dev/null
+      printf '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mDeveloping dependencies has been installed\x1b[0m\n'
       print_progress $ITER $TIMES "Installing app for developing"
       ITER=$(($ITER+1))
       # install app
-      python3 -m pip install -e .
+      python3 -m pip install -e . > /dev/null
     else
       print_progress $ITER $TIMES "Installing app"
       ITER=$(($ITER+1))
       # install app
-      python3 -m pip install .
+      python3 -m pip install . > /dev/null
     fi
-    echo '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mApp has been installed\x1b[0m\n'
+    printf '\n\x1b[0;93mNOTE:\x1b[0m \x1b[0;96mApp has been installed\x1b[0m\n'
     print_progress $ITER $TIMES "Checking for unet version"
     # Show unet's version
     unet --version
