@@ -19,16 +19,14 @@ And is regularly tested on:
 
 ### Step 0: (Optional) Install via script file
 
-To install app just with a few clicks and skip Step 1 - 5
-
-Open terminal and in project folder run:
+To install the application quickly and skip steps 1–5, open a terminal, navigate to the project folder, and run:
 ```bash
-source install-app.sh -i
+source install.sh -i
 ```
 
-To see all possibilities of script run :
+The default behavior is to install the app for the global Python installation. Before performing any actions please refer to the help menu:
 ```bash
-source install-app.sh -h
+source install.sh -h
 ```
 
 
